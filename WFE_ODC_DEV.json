@@ -1,0 +1,869 @@
+{
+  "code": "MAKINA_ODC",
+  "label": "Octroi De Crédit",
+  "codeTemplate": "ODC-{{_count[10]}}",
+  "title":"Octroi De Crédit",
+  "actions": {
+    "owner": {},
+    "createdBy": {},
+    "roles": {
+      "R_READ_ALL": {},
+      "R_WRITE_ALL": {}
+    },
+    "groups": {
+      "GROUP_ADMIN": {
+        "details": true,
+        "comment": true,
+        "submit": true,
+        "assign": true,
+        "self-assign": true
+      }
+    }
+  },
+  "activityActions": {
+    "owner": {},
+    "group": {},
+    "caseOwner": {},
+    "caseCreatedBy": {},
+    "roles": {},
+    "groups": {
+      "GROUP_ADMIN": {
+        "details": true,
+        "comment": true,
+        "submit": true,
+        "assign": true,
+        "self-assign": true
+      }
+    }
+  },
+  "nodes": {
+    "creation": {
+      "code": "creation",
+      "codeTemplate": "ODC-{{_count.case[10]}}",
+      "label": "Octroi De Crédit",
+      "type": "activity",
+      "service": "SimpleActivityNode",
+      "start": true,
+      "startCondition": {
+        "or": [
+          {
+            "in": [
+              "GROUP_ADMIN",
+              {
+                "var": "user.groups"
+              }
+            ]
+          }
+        ]
+      },
+      "actionParams": {
+        "submit": {
+          "label": "Enregistrer"
+        },
+        "assign": {}
+      },
+      "actions": {
+        "owner": {
+          "assign": true,
+          "self-assign": true
+        },
+        "group": {},
+        "caseOwner": {},
+        "caseCreatedBy": {},
+        "roles": {
+          "R_READ_ALL": {},
+          "R_WRITE_ALL": {}
+        },
+        "groups": {
+          "GROUP_ADMIN": {
+            "details": true,
+            "comment": true,
+            "submit": true,
+            "assign": true,
+            "self-assign": true
+          }
+        }
+      },
+      "form": "formulaireCreation",
+      "data": {},
+      "icon": "RequestQuote",
+      "owner": "{{token.user.fullname}}",
+      "params": {},
+      "inputs": [
+        {
+          "code": "input"
+        }
+      ],
+      "outputs": [
+        {
+          "label": "",
+          "code": "output"
+        }
+      ],
+      "caseContext": {}
+    },
+    "sqlCase": {
+      "code": "sqlCase",
+      "type": "simple",
+      "service": "SQLNode",
+      "params": {
+        "connexionName": "DB_MAKINA_READ",
+        "values": [
+          "{{code}}"
+        ],
+        "sql": "SELECT id FROM \"Case\" WHERE code = $1 ;"
+      },
+      "inputs": [
+        {
+          "label": "",
+          "code": "input"
+        }
+      ],
+      "outputs": [
+        {
+          "label": "Succes",
+          "code": "success"
+        },
+        {
+          "label": "echec",
+          "code": "failure"
+        }
+      ],
+      "caseContext": {
+        "IdCase": "{{rows[0].id}}"
+      }
+    },
+    "visiteCaution": {
+      "code": "visiteCaution",
+      "codeTemplate": "ODC-{{_count.case[10]}}",
+      "label": "Visite de caution",
+      "type": "activity",
+      "service": "SimpleActivityNode",
+      "start": false,
+      "startCondition": {
+        "or": [
+          {
+            "in": [
+              "GROUP_ADMIN",
+              {
+                "var": "user.groups"
+              }
+            ]
+          }
+        ]
+      },
+      "actionParams": {
+        "submit": {
+          "label": "Soumettre"
+        }
+      },
+      "actions": {
+        "owner": {
+          "assign": true,
+          "self-assign": true
+        },
+        "group": {},
+        "caseOwner": {},
+        "caseCreatedBy": {},
+        "roles": {
+          "R_READ_ALL": {},
+          "R_WRITE_ALL": {}
+        },
+        "groups": {
+          "GROUP_ADMIN": {
+            "details": true,
+            "comment": true,
+            "submit": true,
+            "assign": true,
+            "self-assign": true
+          }
+        }
+      },
+      "form": "formulaireVisiteCaution",
+      "data": {},
+      "icon": "Task",
+      "owner": "AGENT Assurance",
+      "params": {},
+      "inputs": [
+        {
+          "code": "input"
+        }
+      ],
+      "outputs": [
+        {
+          "label": "",
+          "code": "output"
+        }
+      ],
+      "caseContext": {}
+    },
+    "analyseCredit": {
+      "code": "analyseCredit",
+      "codeTemplate": "ODC-{{_count.case[10]}}",
+      "label": "Analyse de crédit",
+      "type": "activity",
+      "service": "SimpleActivityNode",
+      "start": false,
+      "startCondition": {
+        "or": [
+          {
+            "in": [
+              "GROUP_ADMIN",
+              {
+                "var": "user.groups"
+              }
+            ]
+          }
+        ]
+      },
+      "actionParams": {
+        "submit": {
+          "label": "Soumettre"
+        }
+      },
+      "actions": {
+        "owner": {
+          "assign": true,
+          "self-assign": true
+        },
+        "group": {},
+        "caseOwner": {},
+        "caseCreatedBy": {},
+        "roles": {
+          "R_READ_ALL": {},
+          "R_WRITE_ALL": {}
+        },
+        "groups": {
+          "GROUP_ADMIN": {
+            "details": true,
+            "comment": true,
+            "submit": true,
+            "assign": true,
+            "self-assign": true
+          }
+        }
+      },
+      "form": "formulaireVisiteCaution",
+      "data": {},
+      "icon": "Task",
+      "owner": "AGENT Assurance",
+      "params": {},
+      "inputs": [
+        {
+          "code": "input"
+        }
+      ],
+      "outputs": [
+        {
+          "label": "",
+          "code": "output"
+        }
+      ],
+      "caseContext": {}
+    },
+    "conformiteN1": {
+      "code": "conformiteN1",
+      "codeTemplate": "ODC-{{_count.case[10]}}",
+      "label": "Demande Conformité N1",
+      "type": "activity",
+      "service": "SimpleActivityNode",
+      "start": false,
+      "startCondition": {
+        "or": [
+          {
+            "in": [
+              "GROUP_ADMIN",
+              {
+                "var": "user.groups"
+              }
+            ]
+          }
+        ]
+      },
+      "actionParams": {
+        "submit": {
+          "label": "Soumettre"
+        }
+      },
+      "actions": {
+        "owner": {
+          "assign": true,
+          "self-assign": true
+        },
+        "group": {},
+        "caseOwner": {},
+        "caseCreatedBy": {},
+        "roles": {
+          "R_READ_ALL": {},
+          "R_WRITE_ALL": {}
+        },
+        "groups": {
+          "GROUP_ADMIN": {
+            "details": true,
+            "comment": true,
+            "submit": true,
+            "assign": true,
+            "self-assign": true
+          }
+        }
+      },
+      "form": "formulaireVisiteCaution",
+      "data": {},
+      "icon": "Task",
+      "owner": "AGENT Assurance",
+      "params": {},
+      "inputs": [
+        {
+          "code": "input"
+        }
+      ],
+      "outputs": [
+        {
+          "label": "",
+          "code": "output"
+        }
+      ],
+      "caseContext": {}
+    },
+    "conformiteN2": {
+      "code": "conformiteN2",
+      "codeTemplate": "ODC-{{_count.case[10]}}",
+      "label": "Demande Conformité N2",
+      "type": "activity",
+      "service": "SimpleActivityNode",
+      "start": false,
+      "startCondition": {
+        "or": [
+          {
+            "in": [
+              "GROUP_ADMIN",
+              {
+                "var": "user.groups"
+              }
+            ]
+          }
+        ]
+      },
+      "actionParams": {
+        "submit": {
+          "label": "Soumettre"
+        }
+      },
+      "actions": {
+        "owner": {
+          "assign": true,
+          "self-assign": true
+        },
+        "group": {},
+        "caseOwner": {},
+        "caseCreatedBy": {},
+        "roles": {
+          "R_READ_ALL": {},
+          "R_WRITE_ALL": {}
+        },
+        "groups": {
+          "GROUP_ADMIN": {
+            "details": true,
+            "comment": true,
+            "submit": true,
+            "assign": true,
+            "self-assign": true
+          }
+        }
+      },
+      "form": "formulaireVisiteCaution",
+      "data": {},
+      "icon": "Task",
+      "owner": "AGENT Assurance",
+      "params": {},
+      "inputs": [
+        {
+          "code": "input"
+        }
+      ],
+      "outputs": [
+        {
+          "label": "",
+          "code": "output"
+        }
+      ],
+      "caseContext": {}
+    },
+    "comiteArbitrage": {
+      "code": "comiteArbitrage",
+      "codeTemplate": "ODC-{{_count.case[10]}}",
+      "label": "Comité d'arbitrage",
+      "type": "activity",
+      "service": "SimpleActivityNode",
+      "start": false,
+      "startCondition": {
+        "or": [
+          {
+            "in": [
+              "GROUP_ADMIN",
+              {
+                "var": "user.groups"
+              }
+            ]
+          }
+        ]
+      },
+      "actionParams": {
+        "submit": {
+          "label": "Soumettre"
+        }
+      },
+      "actions": {
+        "owner": {
+          "assign": true,
+          "self-assign": true
+        },
+        "group": {},
+        "caseOwner": {},
+        "caseCreatedBy": {},
+        "roles": {
+          "R_READ_ALL": {},
+          "R_WRITE_ALL": {}
+        },
+        "groups": {
+          "GROUP_ADMIN": {
+            "details": true,
+            "comment": true,
+            "submit": true,
+            "assign": true,
+            "self-assign": true
+          }
+        }
+      },
+      "form": "formulaireVisiteCaution",
+      "data": {},
+      "icon": "Task",
+      "owner": "AGENT Assurance",
+      "params": {},
+      "inputs": [
+        {
+          "code": "input"
+        }
+      ],
+      "outputs": [
+        {
+          "label": "",
+          "code": "output"
+        }
+      ],
+      "caseContext": {}
+    },
+    "validationProposition": {
+      "code": "validationProposition",
+      "codeTemplate": "ODC-{{_count.case[10]}}",
+      "label": "Validation de proposition",
+      "type": "activity",
+      "service": "SimpleActivityNode",
+      "start": false,
+      "startCondition": {
+        "or": [
+          {
+            "in": [
+              "GROUP_ADMIN",
+              {
+                "var": "user.groups"
+              }
+            ]
+          }
+        ]
+      },
+      "actionParams": {
+        "submit": {
+          "label": "Soumettre"
+        }
+      },
+      "actions": {
+        "owner": {
+          "assign": true,
+          "self-assign": true
+        },
+        "group": {},
+        "caseOwner": {},
+        "caseCreatedBy": {},
+        "roles": {
+          "R_READ_ALL": {},
+          "R_WRITE_ALL": {}
+        },
+        "groups": {
+          "GROUP_ADMIN": {
+            "details": true,
+            "comment": true,
+            "submit": true,
+            "assign": true,
+            "self-assign": true
+          }
+        }
+      },
+      "form": "formulaireVisiteCaution",
+      "data": {},
+      "icon": "Task",
+      "owner": "AGENT Assurance",
+      "params": {},
+      "inputs": [
+        {
+          "code": "input"
+        }
+      ],
+      "outputs": [
+        {
+          "label": "",
+          "code": "output"
+        }
+      ],
+      "caseContext": {}
+    },
+    "integrationT24": {
+      "code": "integrationT24",
+      "codeTemplate": "ODC-{{_count.case[10]}}",
+      "label": "Intégration T24",
+      "type": "activity",
+      "service": "SimpleActivityNode",
+      "start": false,
+      "startCondition": {
+        "or": [
+          {
+            "in": [
+              "GROUP_ADMIN",
+              {
+                "var": "user.groups"
+              }
+            ]
+          }
+        ]
+      },
+      "actionParams": {
+        "submit": {
+          "label": "Soumettre"
+        }
+      },
+      "actions": {
+        "owner": {
+          "assign": true,
+          "self-assign": true
+        },
+        "group": {},
+        "caseOwner": {},
+        "caseCreatedBy": {},
+        "roles": {
+          "R_READ_ALL": {},
+          "R_WRITE_ALL": {}
+        },
+        "groups": {
+          "GROUP_ADMIN": {
+            "details": true,
+            "comment": true,
+            "submit": true,
+            "assign": true,
+            "self-assign": true
+          }
+        }
+      },
+      "form": "formulaireVisiteCaution",
+      "data": {},
+      "icon": "Task",
+      "owner": "AGENT Assurance",
+      "params": {},
+      "inputs": [
+        {
+          "code": "input"
+        }
+      ],
+      "outputs": [
+        {
+          "label": "",
+          "code": "output"
+        }
+      ],
+      "caseContext": {}
+    },
+
+    "end": {
+      "code": "end",
+      "service": "EndNode",
+      "type": "simple",
+      "owner": "{{node.creation.user.email}}",
+      "params": {
+        "stopAll": true
+      },
+      "inputs": [
+        {
+          "label": "",
+          "code": "input"
+        }
+      ],
+      "outputs": [
+        {
+          "label": "",
+          "code": "output"
+        }
+      ]
+    }
+  },
+  "links": [
+    { "source": { "node": "creation", "output": "output" },  "target": { "node": "sqlCase", "input": "input" } },
+    { "source": { "node": "sqlCase", "output": "success" }, "target": { "node": "visiteCaution", "input": "input" } },
+    { "source": { "node": "visiteCaution", "output": "output" }, "target": { "node": "analyseCredit", "input": "input" } },
+    { "source": { "node": "analyseCredit", "output": "output" }, "target": { "node": "conformiteN1", "input": "input" } },
+    { "source": { "node": "conformiteN1", "output": "output" }, "target": { "node": "conformiteN2", "input": "input" } },
+    { "source": { "node": "conformiteN2", "output": "output" },  "target": { "node": "comiteArbitrage", "input": "input" } },
+    { "source": { "node": "comiteArbitrage", "output": "output" },  "target": { "node": "validationProposition", "input": "input" } },
+    { "source": { "node": "validationProposition", "output": "output" },  "target": { "node": "integrationT24", "input": "input" } },
+
+    { "source": { "node": "integrationT24", "output": "output" },  "target": { "node": "end", "input": "input" } },
+    {  "source": {  "node":  "sqlCase",  "output":  "failure" },  "target": {  "node":  "end",  "input":  "input" } }
+  ],
+  "forms": {
+    "formulaireCreation": {
+      "code": "formulaireCreation",
+      "label": "Demande d’octroi de crédit",
+      "schema": {
+        "type": "object",
+        "required": [],
+        "properties": {}
+      },
+      "uischema": {
+        "type": "Categorization",
+        "elements": [
+          {
+            "type": "Category",
+            "elements": [],
+            "label": "Informations"
+          }
+        ]
+      },
+      "scripts": [],
+      "transformers": []
+    },
+    "formulaireVisiteCaution": {
+      "code": "formulaireVisiteCaution",
+      "label": "Resultat de la visite de caution",
+      "schema": {
+        "type": "object",
+        "required": [],
+        "properties": {}
+      },
+      "uischema": {
+        "type": "Categorization",
+        "elements": [
+          {
+            "type": "Category",
+            "elements": [],
+            "label": "Resultat de la visite de caution"
+          }
+        ]
+      },
+      "scripts": [],
+      "transformers": []
+    },
+
+    "formulaireODC": {
+      "code": "formulaireODC",
+      "label": "Demande d’octroi de crédit",
+      "schema": {
+        "type": "object",
+        "required": [],
+        "properties": {}
+      },
+      "uischema": {
+        "type": "Categorization",
+        "elements": [
+          {
+            "type": "Category",
+            "label": "informations Demande",
+            "elements": [
+              {
+                "type": "Group",
+                "label": "Resumé Informations Demande",
+                "options": {
+                  "readOnly": true,
+                  "variant": "accordion"
+                },
+                "elements": []
+              }
+            ]
+          }
+        ]
+      },
+      "scripts": [],
+      "transformers": []
+    }
+  },
+  "form": [
+    {
+      "code": "formulaireODC",
+      "readOnly": true,
+      "data": {}
+    }
+  ],
+  "view": {
+      "chronologie": {
+          "defaultOpen": false
+      },
+      "Informations": {
+          "defaultOpen": true
+      }
+  },
+  "relationCase": {
+    "defaultProperties": [],
+    "displayMode": "vertical"
+  },
+  "filterCategory": [{
+    "code": "ODC_filterCategory",
+    "label": "Octroi De Crédit",
+    "rank": "1",
+    "icon": "RequestQuote",
+    "condition": {
+      "or": [
+          { "in": ["GROUP_ADMIN", { "var": "user.groups" }] }
+      ] 
+    }              
+  }],
+  "filters": [
+    {
+      "code": "ODC_Creation",
+      "label": "Traitement en cours",
+      "icon": "Autorenew",
+      "rank": 1,
+      "filterCategoryCode": "ODC_filterCategory",
+      "condition": {
+        "or": [
+          { "in": ["GROUP_ADMIN", { "var": "user.groups" }] }
+        ]
+      },
+      "schema": {
+        "type": "activity",
+        "api": {
+          "path": "/activities"
+        },
+        "crudQuery": {
+          "joins": ["token.case.nodeContexts"],
+          "where": {
+            "token": {
+              "case": {
+                "processVersion": {
+                  "processCode": "MAKINA_ODC"
+                }
+              },
+              "targetNodeCode": {
+                "in": [
+                  "creation","visiteCaution","analyseCredit","conformiteN1","conformiteN2","comiteArbitrage","validationProposition","integrationT24"
+                ]
+              }
+            }
+          },
+          "orderBy": [
+            {
+              "updatedAt": "desc"
+            }
+          ],
+          "page": 1,
+          "pageSize": 25
+        },
+        "columns": [
+          {
+            "type": "text",
+            "label": "Num Police",
+            "key": "code",
+            "filters": ["equals"],
+            "compact": true
+          },
+          {
+            "type": "text",
+            "label": "Status",
+            "key": "status",
+            "filters": ["equals"],
+            "compact": true
+          },
+          {
+            "type": "text",
+            "label": "Code de la demande",
+            "key": "token.case.context.resume",
+            "filters": ["equals"],
+            "compact": true
+          },
+          {
+            "type": "text",
+            "label": "Assigné à",
+            "key": "owner",
+            "filters": ["contains"],
+            "compact": true,
+            "compactTitle": true
+          },
+          {
+            "type": "dateTime",
+            "label": "Date de mise à jour",
+            "key": "updatedAt",
+            "filters": ["gt", "lt"],
+            "compact": true
+          }
+        ]
+      }
+    },
+
+    {
+      "code": "ODC_Folder",
+      "label": "Dossiers-ODC ",
+      "icon": "FolderOutlined",
+      "rank": 29,
+      "filterCategoryCode": "ODC_filterCategory",
+      "condition": {
+        "or": [
+          { "in": ["GROUP_ADMIN", { "var": "user.groups" }] }
+        ]
+      },
+      "schema": {
+        "type": "case",
+        "api": {
+          "path": "/cases"
+        },
+        "crudQuery": {
+          "joins": ["processVersion.process", "nodeContexts"],
+          "where": {
+            "processVersion": {
+              "processCode": "MAKINA_ODC"
+            }
+          },
+          "orderBy": [
+            {
+              "updatedAt": "desc"
+            }
+          ]
+        },
+        "columns": [
+          {
+            "type": "text",
+            "label": "Code Dossier",
+            "key": "code",
+            "filters": ["equals"],
+            "compact": true
+          },
+          {
+            "type": "text",
+            "label": "Status",
+            "key": "status",
+            "filters": ["equals"],
+            "compact": true
+          },
+          {
+            "type": "dateTime",
+            "label": "Date de création",
+            "key": "createdAt",
+            "filters": ["gt", "lt"],
+            "compact": true
+          },
+          {
+            "type": "dateTime",
+            "label": "Date de mise à jour",
+            "key": "updatedAt",
+            "filters": ["gt", "lt"]
+          }
+        ]
+      }
+    }
+  ]
+}
