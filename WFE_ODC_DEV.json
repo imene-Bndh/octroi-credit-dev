@@ -2,7 +2,7 @@
   "code": "MAKINA_ODC",
   "label": "Octroi De Crédit",
   "codeTemplate": "ODC-{{_count[10]}}",
-  "title":"Octroi De Crédit",
+  "title": "Octroi De Crédit",
   "actions": {
     "owner": {},
     "createdBy": {},
@@ -100,7 +100,48 @@
           "code": "output"
         }
       ],
-      "caseContext": {}
+      "caseContext": {
+        "prospect": "{{data.prospect}}",
+        "client": "{{data.id == 'Client' ? data.client : data.nonClient}}",
+        "client.segment": "{{data.segment}}",
+        "canalDemande": "{{user.properties.canalDemande}}",
+        "codeAgence": "{{user.properties.codeAgence? user.properties.codeAgence : 'A01'}}"
+      }
+    },
+    "getCodeZone": {
+      "type": "simple",
+      "service": "RestNode",
+      "code": "getCodeZone",
+      "params": {
+        "requestTemplate": {
+          "method": "GET",
+          "url": "https://sipem-dev-strapi-makina.kepler-technologies.com/api/agence/getCodeZone",
+          "params": {
+            "agence": "{{codeAgence}}",
+            "code": "{{code}}"
+          }
+        }
+      },
+      "caseContext": {
+        "codeZone": "{{code_zone}}",
+        "resume": "{{resume}}"
+      },
+      "inputs": [
+        {
+          "label": "Donnée Input",
+          "code": "input"
+        }
+      ],
+      "outputs": [
+        {
+          "label": "Succès",
+          "code": "success"
+        },
+        {
+          "label": "",
+          "code": "failure"
+        }
+      ]
     },
     "sqlCase": {
       "code": "sqlCase",
@@ -108,9 +149,7 @@
       "service": "SQLNode",
       "params": {
         "connexionName": "DB_MAKINA_READ",
-        "values": [
-          "{{code}}"
-        ],
+        "values": ["{{code}}"],
         "sql": "SELECT id FROM \"Case\" WHERE code = $1 ;"
       },
       "inputs": [
@@ -605,7 +644,8 @@
     }
   },
   "links": [
-    { "source": { "node": "creation", "output": "output" },  "target": { "node": "sqlCase", "input": "input" } },
+    { "source": { "node": "creation", "output": "output" },  "target": { "node": "getCodeZone", "input": "input" } },
+    { "source": { "node": "getCodeZone", "output": "success" }, "target": { "node": "sqlCase", "input": "input" } },
     { "source": { "node": "sqlCase", "output": "success" }, "target": { "node": "visiteCaution", "input": "input" } },
     { "source": { "node": "visiteCaution", "output": "output" }, "target": { "node": "analyseCredit", "input": "input" } },
     { "source": { "node": "analyseCredit", "output": "output" }, "target": { "node": "conformiteN1", "input": "input" } },
@@ -615,7 +655,8 @@
     { "source": { "node": "validationProposition", "output": "output" },  "target": { "node": "integrationT24", "input": "input" } },
 
     { "source": { "node": "integrationT24", "output": "output" },  "target": { "node": "end", "input": "input" } },
-    {  "source": {  "node":  "sqlCase",  "output":  "failure" },  "target": {  "node":  "end",  "input":  "input" } }
+    {  "source": {  "node":  "sqlCase",  "output":  "failure" },  "target": {  "node":  "end",  "input":  "input" } },
+    { "source": { "node": "getCodeZone", "output": "failure" }, "target": { "node": "end", "input": "input" } }
   ],
   "forms": {
     "formulaireCreation": {
@@ -623,20 +664,3697 @@
       "label": "Demande d’octroi de crédit",
       "schema": {
         "type": "object",
-        "required": [],
-        "properties": {}
+        "required": [
+          "codeClient",
+          "groupeProduit",
+          "produit",
+          "montantMin",
+          "montantMax",
+          "duree",
+          "objetDuCredit",
+          "tauxInteretAnnuel",
+          "tauxMin",
+          "tauxMax",
+          "negociable",
+          "cinNumerisee",
+          "certificatResidenceDemandeur",
+          "devisProforma",
+          "photocopieCarnetFokontany"
+        ],
+        "properties": {
+          "prospect": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": ["Oui"]
+            }
+          },
+          "codeClient": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "segment": {
+            "type": "string",
+            "enum": ["Personne Morale", "Personne Physique"]
+          },
+          "nonClient": {
+            "type": "object",
+            "properties": {
+              "segment": {
+                "type": "string",
+                "enum": ["Personne Morale", "Personne Physique"]
+              },
+              "denominationSociale": {
+                "type": "string",
+                "enum": ["SARL", "EURL", "SARLU", "SA", "Autre"]
+              },
+              "raisonSociale": {
+                "type": "string"
+              },
+              "siegeSocial": {
+                "type": "string"
+              },
+              "secteurActivite": {
+                "type": "string"
+              },
+              "nRegistreCommerce": {
+                "type": "string"
+              },
+              "nif": {
+                "type": "string"
+              },
+              "stat": {
+                "type": "string"
+              },
+              "dateCreation": {
+                "type": "string",
+                "format": "date"
+              },
+              "anciennete": {
+                "type": "number"
+              },
+              "civilite": {
+                "type": "string",
+                "enum": ["Melle", "Madame", "Monsieur"]
+              },
+              "nom": {
+                "type": "string"
+              },
+              "prenom": {
+                "type": "string"
+              },
+              "nationalite": {
+                "type": "string"
+              },
+              "dateNaissance": {
+                "type": "string",
+                "format": "date"
+              },
+              "lieuNaissance": {
+                "type": "string"
+              },
+              "nCNI": {
+                "type": "string"
+              },
+              "dateDelivranceCIN": {
+                "type": "string",
+                "format": "date"
+              },
+              "lieuDelivranceCIN": {
+                "type": "string"
+              },
+              "BP": {
+                "type": "string"
+              },
+              "telephone": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "adresse": {
+                "type": "string"
+              },
+              "dirigeantPrincipal": {
+                "type": "string"
+              },
+              "pouvoirsSignature": {
+                "type": "string"
+              },
+              "nomActionnaire": {
+                "type": "string"
+              },
+              "tauxActions": {
+                "type": "number"
+              },
+              "etatCivil": {
+                "type": "string",
+                "enum": ["Célibataire", "Marié", "Veuf", "Divorcé"]
+              },
+              "nombrePersonneCharge": {
+                "type": "number"
+              },
+              "statutProfessionnel": {
+                "type": "string",
+                "enum": [
+                  "Salarié",
+                  "Travailleur indépendant",
+                  "Commerçant",
+                  "Agriculteur",
+                  "Éleveur",
+                  "Autre"
+                ]
+              },
+              "autre": {
+                "type": "string"
+              },
+              "adresseEmployeur": {
+                "type": "string"
+              },
+              "employeur": {
+                "type": "string"
+              },
+              "typeContrat": {
+                "type": "string",
+                "enum": ["CDD", "CDI"]
+              },
+              "activite": {
+                "type": "string"
+              },
+              "ancienneteActivite": {
+                "type": "number"
+              },
+              "periodeEssai": {
+                "type": "string",
+                "enum": [
+                  "Concluante",
+                  "Durée demande Inférieur Durée Contrat Travail",
+                  "Absence de Clause de Rupture Sans Motif Dans le contrat de Travail"
+                ]
+              },
+              "secteur": {
+                "type": "string",
+                "enum": ["Public", "Privé"]
+              },
+              "AncienneteExistanceEmployeur": {
+                "type": "number"
+              },
+              "domicilierChez": {
+                "type": "string"
+              },
+              "nCompte": {
+                "type": "string"
+              },
+              "IBAN": {
+                "type": "string"
+              },
+              "dateEntreeEnRelation": {
+                "type": "string",
+                "format": "date",
+                "title": "Date d’entrée en relation"
+              },
+              "creditsEnCours": {
+                "type": "number",
+                "title": "Crédits en cours"
+              },
+              "creditsContractes": {
+                "type": "number",
+                "title": "Crédits contractés"
+              },
+              "incidentsPaiement": {
+                "type": "integer",
+                "title": "Incidents de paiement"
+              },
+              "realisation": {
+                "type": "string",
+                "title": "Réalisation"
+              },
+              "endettementEnCoursLieSalaire": {
+                "type": "number",
+                "title": "Endettement en Cour (Liés au Salaire)"
+              },
+              "prelevementFixe": {
+                "type": "number",
+                "title": "Prélèvement Fixe"
+              },
+              "netApresEndettement": {
+                "type": "number",
+                "title": "Net après Endettement"
+              },
+              "quotiteCessibleZarasoa": {
+                "type": "number",
+                "title": "Quotité Cessible ZARASOA (33.33% du Net après Endettement)"
+              },
+              "fluxTresorerie": {
+                "type": "number",
+                "title": "Flux de trésorerie"
+              },
+              "capaciteRemboursementDscr": {
+                "type": "number",
+                "title": "Capacité de remboursement / DSCR"
+              },
+              "chiffreAffaires": {
+                "type": "number",
+                "title": "Chiffre d’affaires"
+              },
+              "salaireNetHorsIndemniteVariable": {
+                "type": "number",
+                "title": "Salaire Net (Hors Indemnité Variable)"
+              },
+              "quotiteCessibleLegal": {
+                "type": "number",
+                "title": "Quotité Cessible Légal"
+              }
+            }
+          },
+          "client": {
+            "type": "object",
+            "properties": {
+              "segment": {
+                "type": "string"
+              },
+              "denominationSociale": {
+                "type": "string"
+              },
+              "raisonSociale": {
+                "type": "string"
+              },
+              "siegeSocial": {
+                "type": "string"
+              },
+              "secteurActivite": {
+                "type": "string"
+              },
+              "nRegistreCommerce": {
+                "type": "string"
+              },
+              "nif": {
+                "type": "string"
+              },
+              "stat": {
+                "type": "string"
+              },
+              "dateCreation": {
+                "type": "string"
+              },
+              "anciennete": {
+                "type": "number"
+              },
+              "civilite": {
+                "type": "string"
+              },
+              "nom": {
+                "type": "string"
+              },
+              "prenom": {
+                "type": "string"
+              },
+              "nationalite": {
+                "type": "string"
+              },
+              "dateNaissance": {
+                "type": "string"
+              },
+              "lieuNaissance": {
+                "type": "string"
+              },
+              "nCNI": {
+                "type": "string"
+              },
+              "dateDelivranceCIN": {
+                "type": "string"
+              },
+              "lieuDelivranceCIN": {
+                "type": "string"
+              },
+              "BP": {
+                "type": "string"
+              },
+              "telephone": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "adresse": {
+                "type": "string"
+              },
+              "dirigeantPrincipal": {
+                "type": "string"
+              },
+              "pouvoirsSignature": {
+                "type": "string"
+              },
+              "nomActionnaire": {
+                "type": "string"
+              },
+              "tauxActions": {
+                "type": "number"
+              },
+              "etatCivil": {
+                "type": "string"
+              },
+              "nombrePersonneCharge": {
+                "type": "number"
+              },
+              "statutProfessionnel": {
+                "type": "string"
+              },
+              "autre": {
+                "type": "string"
+              },
+              "adresseEmployeur": {
+                "type": "string"
+              },
+              "employeur": {
+                "type": "string"
+              },
+              "typeContrat": {
+                "type": "string"
+              },
+              "activite": {
+                "type": "string"
+              },
+              "ancienneteActivite": {
+                "type": "number"
+              },
+              "periodeEssai": {
+                "type": "string"
+              },
+              "secteur": {
+                "type": "string"
+              },
+              "AncienneteExistanceEmployeur": {
+                "type": "number"
+              },
+              "domicilierChez": {
+                "type": "string"
+              },
+              "nCompte": {
+                "type": "string"
+              },
+              "IBAN": {
+                "type": "string"
+              },
+              "dateEntreeEnRelation": {
+                "type": "string",
+                "format": "date",
+                "title": "Date d’entrée en relation"
+              },
+              "creditsEnCours": {
+                "type": "number",
+                "title": "Crédits en cours"
+              },
+              "creditsContractes": {
+                "type": "number",
+                "title": "Crédits contractés"
+              },
+              "incidentsPaiement": {
+                "type": "integer",
+                "title": "Incidents de paiement"
+              },
+              "realisation": {
+                "type": "string",
+                "title": "Réalisation"
+              },
+              "endettementEnCoursLieSalaire": {
+                "type": "number",
+                "title": "Endettement en Cour (Liés au Salaire)"
+              },
+              "prelevementFixe": {
+                "type": "number",
+                "title": "Prélèvement Fixe"
+              },
+              "netApresEndettement": {
+                "type": "number",
+                "title": "Net après Endettement"
+              },
+              "quotiteCessibleZarasoa": {
+                "type": "number",
+                "title": "Quotité Cessible ZARASOA (33.33% du Net après Endettement)"
+              },
+              "fluxTresorerie": {
+                "type": "number",
+                "title": "Flux de trésorerie"
+              },
+              "capaciteRemboursementDscr": {
+                "type": "number",
+                "title": "Capacité de remboursement / DSCR"
+              },
+              "chiffreAffaires": {
+                "type": "number",
+                "title": "Chiffre d’affaires"
+              },
+              "salaireNetHorsIndemniteVariable": {
+                "type": "number",
+                "title": "Salaire Net (Hors Indemnité Variable)"
+              },
+              "quotiteCessibleLegal": {
+                "type": "number",
+                "title": "Quotité Cessible Légal"
+              }
+            }
+          },
+          "groupeProduit": {
+            "type": "string",
+            "title": "Groupe Produit"
+          },
+          "produit": {
+            "type": "string",
+            "title": "Produit"
+          },
+          "montantMin": {
+            "type": "number",
+            "title": "Montant MIN"
+          },
+          "montantMax": {
+            "type": "number",
+            "title": "Montant MAX"
+          },
+          "duree": {
+            "type": "string",
+            "title": "Durée",
+            "enum": ["Court terme", "Moyen terme", "Long terme"]
+          },
+          "objetDuCredit": {
+            "type": "string",
+            "title": "Objet Du Crédit"
+          },
+          "tauxInteretAnnuel": {
+            "type": "number",
+            "title": "Taux Intérêt Annuel"
+          },
+          "tauxMin": {
+            "type": "number",
+            "title": "Taux Min"
+          },
+          "tauxMax": {
+            "type": "number",
+            "title": "Taux Max"
+          },
+          "negociable": {
+            "type": "string",
+            "title": "Négociable",
+            "enum": ["oui", "non"]
+          },
+          "cinNumerisee": {
+            "type": "array",
+            "title": "CIN numérisée avec la mention",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fileId": {
+                  "type": "string"
+                },
+                "filename": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "certificatResidenceDemandeur": {
+            "type": "array",
+            "title": "Certificat de résidence du demandeur",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fileId": {
+                  "type": "string"
+                },
+                "filename": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "devisProforma": {
+            "type": "array",
+            "title": "Devis / Proforma",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fileId": {
+                  "type": "string"
+                },
+                "filename": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "photocopieCarnetFokontany": {
+            "type": "array",
+            "title": "Photocopie Carnet Fokontany",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fileId": {
+                  "type": "string"
+                },
+                "filename": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "fluxTresorerie": {
+            "type": "number",
+            "title": "Flux de trésorerie"
+          },
+          "capaciteRemboursementDscr": {
+            "type": "number",
+            "title": "Capacité de remboursement / DSCR"
+          },
+          "chiffreAffaires": {
+            "type": "number",
+            "title": "Chiffre d’affaires"
+          },
+          "salaireNetHorsIndemniteVariable": {
+            "type": "number",
+            "title": "Salaire Net (Hors Indemnité Variable)"
+          },
+          "quotiteCessibleLegal": {
+            "type": "number",
+            "title": "Quotité Cessible Légal"
+          },
+          "dateEntreeEnRelation": {
+            "type": "string",
+            "format": "date",
+            "title": "Date d’entrée en relation"
+          },
+          "anciennete": {
+            "type": "number",
+            "title": "Ancienneté"
+          },
+          "creditsEnCours": {
+            "type": "number",
+            "title": "Crédits en cours"
+          },
+          "creditsContractes": {
+            "type": "number",
+            "title": "Crédits contractés"
+          },
+          "endettementEnCoursLieSalaire": {
+            "type": "number",
+            "title": "Endettement en Cour (Liés au Salaire)"
+          },
+          "prelevementFixe": {
+            "type": "number",
+            "title": "Prélèvement Fixe"
+          },
+          "netApresEndettement": {
+            "type": "number",
+            "title": "Net après Endettement"
+          },
+          "quotiteCessibleZarasoa": {
+            "type": "number",
+            "title": "Quotité Cessible ZARASOA (33.33% du Net après Endettement)"
+          },
+          "incidentsPaiement": {
+            "type": "integer",
+            "title": "Incidents de paiement"
+          },
+          "realisation": {
+            "type": "string",
+            "title": "Réalisation"
+          }
+        }
       },
       "uischema": {
         "type": "Categorization",
         "elements": [
           {
             "type": "Category",
-            "elements": [],
-            "label": "Informations"
+            "label": "Information Demandeur",
+            "elements": [
+              {
+                "type": "Group",
+                "label": "Information Demandeur",
+                "options": {
+                  "variant": "accordion"
+                },
+                "elements": [
+                  {
+                    "type": "HorizontalLayout",
+                    "elements": [
+                      {
+                        "type": "Control",
+                        "scope": "#/properties/codeClient",
+                        "label": "Nom Client/Code Client",
+                        "options": {
+                          "component": "autocompleteLinkedField",
+                          "freeSolo": true,
+                          "params": {
+                            "requestTemplate": {
+                              "method": "GET",
+                              "url": "https://sipem-dev-strapi-makina.kepler-technologies.com/api/policeAssurance/getCodeClient",
+                              "params": {}
+                            },
+                            "linkedFields": [],
+                            "output": {
+                              "items": "{{data}}",
+                              "label": "{{codeClient}}",
+                              "value": "{{codeClient}}"
+                            }
+                          },
+                          "linkFields": {
+                            "linkedFields": [
+                              "id",
+                              "segment",
+                              "client.segment",
+                              "client.denominationSociale",
+                              "client.raisonSociale",
+                              "client.siegeSocial",
+                              "client.secteurActivite",
+                              "client.nRegistreCommerce",
+                              "client.nif",
+                              "client.stat",
+                              "client.dateCreation",
+                              "client.anciennete",
+                              "client.civilite",
+                              "client.nom",
+                              "client.prenom",
+                              "client.nationalite",
+                              "client.dateNaissance",
+                              "client.lieuNaissance",
+                              "client.nCNI",
+                              "client.dateDelivranceCIN",
+                              "client.lieuDelivranceCIN",
+                              "client.BP",
+                              "client.telephone",
+                              "client.email",
+                              "client.adresse",
+                              "client.dirigeantPrincipal",
+                              "client.pouvoirsSignature",
+                              "client.nomActionnaire",
+                              "client.tauxActions",
+                              "client.etatCivil",
+                              "client.nombrePersonneCharge",
+                              "client.statutProfessionnel",
+                              "client.autre",
+                              "client.adresseEmployeur",
+                              "client.employeur",
+                              "client.typeContrat",
+                              "client.activite",
+                              "client.ancienneteActivite",
+                              "client.periodeEssai",
+                              "client.secteur",
+                              "client.AncienneteExistanceEmployeur",
+                              "client.domicilierChez",
+                              "client.nCompte",
+                              "client.IBAN"
+                            ],
+                            "requestTemplate": {
+                              "method": "GET",
+                              "url": "https://sipem-dev-strapi-makina.kepler-technologies.com/api/policeAssurance/getClientByCodeClient",
+                              "params": {
+                                "codeClient": "{{codeClient}}"
+                              }
+                            },
+                            "dataTemplate": {
+                              "id": "Client",
+                              "segment": "{{segment}}",
+                              "client.segment": "{{segment}}",
+                              "client.denominationSociale": "{{denominationSociale}}",
+                              "client.raisonSociale": "{{raisonSociale}}",
+                              "client.siegeSocial": "{{siegeSocial}}",
+                              "client.secteurActivite": "{{secteurActivite}}",
+                              "client.nRegistreCommerce": "{{nRegistreCommerce}}",
+                              "client.nif": "{{nif}}",
+                              "client.stat": "{{stat}}",
+                              "client.dateCreation": "{{dateCreation}}",
+                              "client.anciennete": "{{anciennete}}",
+                              "client.civilite": "{{civilite}}",
+                              "client.nom": "{{nom}}",
+                              "client.prenom": "{{prenom}}",
+                              "client.nationalite": "{{nationalite}}",
+                              "client.dateNaissance": "{{dateNaissance}}",
+                              "client.lieuNaissance": "{{lieuNaissance}}",
+                              "client.nCNI": "{{nCNI}}",
+                              "client.dateDelivranceCIN": "{{dateDelivranceCIN}}",
+                              "client.lieuDelivranceCIN": "{{lieuDelivranceCIN}}",
+                              "client.BP": "{{BP}}",
+                              "client.telephone": "{{telephone}}",
+                              "client.email": "{{email}}",
+                              "client.adresse": "{{adresse}}",
+                              "client.dirigeantPrincipal": "{{dirigeantPrincipal}}",
+                              "client.pouvoirsSignature": "{{pouvoirsSignature}}",
+                              "client.nomActionnaire": "{{nomActionnaire}}",
+                              "client.tauxActions": "{{tauxActions}}",
+                              "client.etatCivil": "{{etatCivil}}",
+                              "client.nombrePersonneCharge": "{{nombrePersonneCharge}}",
+                              "client.statutProfessionnel": "{{statutProfessionnel}}",
+                              "client.autre": "{{autre}}",
+                              "client.adresseEmployeur": "{{adresseEmployeur}}",
+                              "client.employeur": "{{employeur}}",
+                              "client.typeContrat": "{{typeContrat}}",
+                              "client.activite": "{{activite}}",
+                              "client.ancienneteActivite": "{{ancienneteActivite}}",
+                              "client.periodeEssai": "{{periodeEssai}}",
+                              "client.secteur": "{{secteur}}",
+                              "client.AncienneteExistanceEmployeur": "{{AncienneteExistanceEmployeur}}",
+                              "client.domicilierChez": "{{domicilierChez}}",
+                              "client.nCompte": "{{nCompte}}",
+                              "client.IBAN": "{{IBAN}}"
+                            }
+                          },
+                          "grid": {
+                            "md": 8,
+                            "sm": 8,
+                            "xs": 8
+                          }
+                        }
+                      },
+                      {
+                        "type": "Control",
+                        "scope": "#/properties/prospect",
+                        "label": "Prospect",
+                        "options": {
+                          "format": "radio",
+                          "grid": {
+                            "md": 4,
+                            "sm": 4,
+                            "xs": 4
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Control",
+                    "scope": "#/properties/id",
+                    "rule": {
+                      "effect": "SHOW",
+                      "condition": {
+                        "scope": "#/properties/prospect",
+                        "schema": {
+                          "const": "hidden Field"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Control",
+                    "scope": "#/properties/segment",
+                    "options": {
+                      "format": "radio"
+                    },
+                    "rule": {
+                      "effect": "SHOW",
+                      "condition": {
+                        "scope": "#/properties/prospect",
+                        "schema": {
+                          "type": "array",
+                          "contains": {
+                            "const": "Oui"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "VerticalLayout",
+                    "elements": [
+                      {
+                        "type": "Group",
+                        "label": "Identification du demandeur",
+                        "options": {
+                          "variant": "collapse"
+                        },
+                        "elements": [
+                          {
+                            "type": "VerticalLayout",
+                            "elements": [
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/denominationSociale",
+                                    "label": "Dénomination sociale",
+                                    "options": {
+                                      "format": "radio",
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/raisonSociale",
+                                "label": "Raison Sociale"
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/siegeSocial",
+                                "label": "Siége Social"
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/secteurActivite",
+                                "label": "Secteur d’activité"
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/nRegistreCommerce",
+                                    "label": "N° Registre du Commerce",
+                                    "options": {
+                                      "grid": {
+                                        "md": 4,
+                                        "sm": 4,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/nif",
+                                    "label": "N° Identification Fiscale (NIF)",
+                                    "options": {
+                                      "grid": {
+                                        "md": 4,
+                                        "sm": 4,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/stat",
+                                    "label": "Numéro statistique (STAT)",
+                                    "options": {
+                                      "grid": {
+                                        "md": 4,
+                                        "sm": 4,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/dateCreation",
+                                    "label": "Date de création",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/anciennete",
+                                    "label": "Ancienneté",
+                                    "options": {
+                                      "options": {
+                                        "max": 1000,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "format": "default",
+                                        "suffix": "ans",
+                                        "decimalPlaces": 0,
+                                        "thousandSeparator": " "
+                                      },
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ],
+                            "rule": {
+                              "effect": "SHOW",
+                              "condition": {
+                                "scope": "#/properties/segment",
+                                "schema": {
+                                  "const": "Personne Morale"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "VerticalLayout",
+                            "elements": [
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/civilite",
+                                    "label": "Civilité",
+                                    "options": {
+                                      "format": "radio",
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/nom",
+                                    "label": "Nom",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/prenom",
+                                    "label": "Prénom",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/nationalite",
+                                "label": "Nationalité"
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/dateNaissance",
+                                    "label": "Date Naissance",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/lieuNaissance",
+                                    "label": "Lieu de Naissance",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/nCNI",
+                                    "label": "N° CNI",
+                                    "options": {
+                                      "grid": {
+                                        "md": 4,
+                                        "sm": 4,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/dateDelivranceCIN",
+                                    "label": "Date de délivrance CIN",
+                                    "options": {
+                                      "grid": {
+                                        "md": 4,
+                                        "sm": 4,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/lieuDelivranceCIN",
+                                    "label": "Lieu de délivrance CIN",
+                                    "options": {
+                                      "grid": {
+                                        "md": 4,
+                                        "sm": 4,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ],
+                            "rule": {
+                              "effect": "SHOW",
+                              "condition": {
+                                "scope": "#/properties/segment",
+                                "schema": {
+                                  "const": "Personne Physique"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Group",
+                        "label": "Coordonnées du demandeur",
+                        "options": {
+                          "variant": "collapse"
+                        },
+                        "elements": [
+                          {
+                            "type": "VerticalLayout",
+                            "elements": [
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/BP",
+                                    "label": "BP",
+                                    "options": {
+                                      "grid": {
+                                        "md": 4,
+                                        "sm": 4,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/email",
+                                    "label": "Email",
+                                    "options": {
+                                      "grid": {
+                                        "md": 4,
+                                        "sm": 4,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/telephone",
+                                    "label": "Téléphone",
+                                    "options": {
+                                      "grid": {
+                                        "md": 4,
+                                        "sm": 4,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ],
+                            "rule": {
+                              "effect": "SHOW",
+                              "condition": {
+                                "scope": "#/properties/segment",
+                                "schema": {
+                                  "const": "Personne Morale"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "VerticalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/adresse",
+                                "label": "Adresse"
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/telephone",
+                                    "label": "Téléphone",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/email",
+                                    "label": "Email",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ],
+                            "rule": {
+                              "effect": "SHOW",
+                              "condition": {
+                                "scope": "#/properties/segment",
+                                "schema": {
+                                  "const": "Personne Physique"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "VerticalLayout",
+                        "elements": [
+                          {
+                            "type": "Group",
+                            "label": "Représentants et gouvernance",
+                            "options": {
+                              "variant": "collapse"
+                            },
+                            "elements": [
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/dirigeantPrincipal",
+                                    "label": "Dirigeant principal",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/pouvoirsSignature",
+                                    "label": "Pouvoirs de signature",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/nomActionnaire",
+                                    "label": "Nom Actionnaire",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/tauxActions",
+                                    "label": "Taux d’Actions",
+                                    "options": {
+                                      "options": {
+                                        "max": 100,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "format": "currency",
+                                        "suffix": "%",
+                                        "decimalPlaces": 3,
+                                        "decimalSeparator": ".",
+                                        "thousandSeparator": " "
+                                      },
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ],
+                        "rule": {
+                          "effect": "SHOW",
+                          "condition": {
+                            "scope": "#/properties/segment",
+                            "schema": {
+                              "const": "Personne Morale"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "VerticalLayout",
+                        "elements": [
+                          {
+                            "type": "Group",
+                            "label": "Situation familiale ",
+                            "options": {
+                              "variant": "collapse"
+                            },
+                            "elements": [
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/etatCivil",
+                                    "label": "Etat Civil",
+                                    "options": {
+                                      "format": "radio",
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/nombrePersonneCharge",
+                                    "label": "Nombre Personne à charge",
+                                    "options": {
+                                      "options": {
+                                        "max": 1000000000,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "format": "currency",
+                                        "suffix": "personnes",
+                                        "decimalPlaces": 0,
+                                        "thousandSeparator": " "
+                                      },
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Group",
+                            "label": "Situation professionnelle",
+                            "options": {
+                              "variant": "collapse"
+                            },
+                            "elements": [
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/statutProfessionnel",
+                                    "label": "Statut professionnel",
+                                    "options": {
+                                      "format": "radio",
+                                      "grid": {
+                                        "md": 8,
+                                        "sm": 8,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/autre",
+                                    "label": "Autre",
+                                    "options": {
+                                      "grid": {
+                                        "md": 4,
+                                        "sm": 4,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/adresseEmployeur",
+                                "label": "Adresse Employeur"
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/employeur",
+                                "label": "Employeur"
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/typeContrat",
+                                    "label": "Type Contrat",
+                                    "options": {
+                                      "format": "radio",
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/ancienneteActivite",
+                                    "label": "Ancienneté dans l’activité",
+                                    "options": {
+                                      "options": {
+                                        "max": 1000,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "format": "default",
+                                        "suffix": "ans",
+                                        "decimalPlaces": 0,
+                                        "thousandSeparator": " "
+                                      },
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/periodeEssai",
+                                "label": "Période d'essai",
+                                "options": {
+                                  "format": "radio"
+                                }
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/secteur",
+                                    "label": "Secteur",
+                                    "options": {
+                                      "format": "radio",
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/activite",
+                                    "label": "Activité / Profession",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/AncienneteExistanceEmployeur",
+                                "label": "Ancienneté Existance Employeur",
+                                "options": {
+                                  "options": {
+                                    "max": 1000,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "default",
+                                    "suffix": "ans",
+                                    "decimalPlaces": 0,
+                                    "thousandSeparator": " "
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ],
+                        "rule": {
+                          "effect": "SHOW",
+                          "condition": {
+                            "scope": "#/properties/segment",
+                            "schema": {
+                              "const": "Personne Physique"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "Group",
+                        "label": "Informations Bancaires",
+                        "options": {
+                          "variant": "collapse"
+                        },
+                        "elements": [
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/domicilierChez",
+                                "label": "Domicilier Chez",
+                                "options": {
+                                  "grid": {
+                                    "md": 4,
+                                    "sm": 4,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/nCompte",
+                                "label": "N° Compte",
+                                "options": {
+                                  "grid": {
+                                    "md": 4,
+                                    "sm": 4,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/IBAN",
+                                "label": "IBAN",
+                                "options": {
+                                  "grid": {
+                                    "md": 4,
+                                    "sm": 4,
+                                    "xs": 12
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ],
+                    "rule": {
+                      "effect": "SHOW",
+                      "condition": {
+                        "scope": "#/properties/prospect",
+                        "schema": {
+                          "type": "array",
+                          "contains": {
+                            "const": "Oui"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "VerticalLayout",
+                    "elements": [
+                      {
+                        "type": "Group",
+                        "label": "Identification du demandeur",
+                        "options": {
+                          "variant": "collapse"
+                        },
+                        "elements": [
+                          {
+                            "type": "VerticalLayout",
+                            "elements": [
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/segment",
+                                    "label": "Segment",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/denominationSociale",
+                                    "label": "Dénomination sociale",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/raisonSociale",
+                                "label": "Raison Sociale"
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/siegeSocial",
+                                "label": "Siége Social"
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/secteurActivite",
+                                "label": "Secteur d’activité"
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/nRegistreCommerce",
+                                    "label": "N° Registre du Commerce",
+                                    "options": {
+                                      "grid": {
+                                        "md": 4,
+                                        "sm": 4,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/nif",
+                                    "label": "N° Identification Fiscale (NIF)",
+                                    "options": {
+                                      "grid": {
+                                        "md": 4,
+                                        "sm": 4,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/stat",
+                                    "label": "Numéro statistique (STAT)",
+                                    "options": {
+                                      "grid": {
+                                        "md": 4,
+                                        "sm": 4,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/dateCreation",
+                                    "label": "Date de création",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/anciennete",
+                                    "label": "Ancienneté",
+                                    "options": {
+                                      "options": {
+                                        "max": 1000,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "format": "default",
+                                        "suffix": "ans",
+                                        "decimalPlaces": 0,
+                                        "thousandSeparator": " "
+                                      },
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ],
+                            "rule": {
+                              "effect": "SHOW",
+                              "condition": {
+                                "scope": "#/properties/segment",
+                                "schema": {
+                                  "const": "Personne Morale"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "VerticalLayout",
+                            "elements": [
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/segment",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/civilite",
+                                    "label": "Civilité",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/nom",
+                                    "label": "Nom",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/prenom",
+                                    "label": "Prénom",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/nationalite",
+                                "label": "Nationalité"
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/dateNaissance",
+                                    "label": "Date Naissance",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/lieuNaissance",
+                                    "label": "Lieu de Naissance",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/nCNI",
+                                    "label": "N° CNI",
+                                    "options": {
+                                      "grid": {
+                                        "md": 4,
+                                        "sm": 4,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/dateDelivranceCIN",
+                                    "label": "Date de délivrance CIN",
+                                    "options": {
+                                      "grid": {
+                                        "md": 4,
+                                        "sm": 4,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/lieuDelivranceCIN",
+                                    "label": "Lieu de délivrance CIN",
+                                    "options": {
+                                      "grid": {
+                                        "md": 4,
+                                        "sm": 4,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ],
+                            "rule": {
+                              "effect": "SHOW",
+                              "condition": {
+                                "scope": "#/properties/segment",
+                                "schema": {
+                                  "const": "Personne Physique"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Group",
+                        "label": "Coordonnées du demandeur",
+                        "options": {
+                          "variant": "collapse"
+                        },
+                        "elements": [
+                          {
+                            "type": "VerticalLayout",
+                            "elements": [
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/BP",
+                                    "label": "BP",
+                                    "options": {
+                                      "grid": {
+                                        "md": 4,
+                                        "sm": 4,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/email",
+                                    "label": "Email",
+                                    "options": {
+                                      "grid": {
+                                        "md": 4,
+                                        "sm": 4,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/telephone",
+                                    "label": "Téléphone",
+                                    "options": {
+                                      "grid": {
+                                        "md": 4,
+                                        "sm": 4,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ],
+                            "rule": {
+                              "effect": "SHOW",
+                              "condition": {
+                                "scope": "#/properties/segment",
+                                "schema": {
+                                  "const": "Personne Morale"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "VerticalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/adresse",
+                                "label": "Adresse"
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/telephone",
+                                    "label": "Téléphone",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/email",
+                                    "label": "Email",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ],
+                            "rule": {
+                              "effect": "SHOW",
+                              "condition": {
+                                "scope": "#/properties/segment",
+                                "schema": {
+                                  "const": "Personne Physique"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "VerticalLayout",
+                        "elements": [
+                          {
+                            "type": "Group",
+                            "label": "Représentants et gouvernance",
+                            "options": {
+                              "variant": "collapse"
+                            },
+                            "elements": [
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/dirigeantPrincipal",
+                                    "label": "Dirigeant principal",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/pouvoirsSignature",
+                                    "label": "Pouvoirs de signature",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/nomActionnaire",
+                                    "label": "Nom Actionnaire",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/tauxActions",
+                                    "label": "Taux d’Actions",
+                                    "options": {
+                                      "options": {
+                                        "max": 100,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "format": "currency",
+                                        "suffix": "%",
+                                        "decimalPlaces": 3,
+                                        "decimalSeparator": ".",
+                                        "thousandSeparator": " "
+                                      },
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ],
+                        "rule": {
+                          "effect": "SHOW",
+                          "condition": {
+                            "scope": "#/properties/segment",
+                            "schema": {
+                              "const": "Personne Morale"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "VerticalLayout",
+                        "elements": [
+                          {
+                            "type": "Group",
+                            "label": "Situation familiale ",
+                            "options": {
+                              "variant": "collapse"
+                            },
+                            "elements": [
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/etatCivil",
+                                    "label": "Etat Civil",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/nombrePersonneCharge",
+                                    "label": "Nombre Personne à charge",
+                                    "options": {
+                                      "options": {
+                                        "max": 1000000000,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "format": "currency",
+                                        "suffix": "personnes",
+                                        "decimalPlaces": 0,
+                                        "thousandSeparator": " "
+                                      },
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Group",
+                            "label": "Situation professionnelle",
+                            "options": {
+                              "variant": "collapse"
+                            },
+                            "elements": [
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/statutProfessionnel",
+                                    "label": "Statut professionnel",
+                                    "options": {
+                                      "grid": {
+                                        "md": 8,
+                                        "sm": 8,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/autre",
+                                    "label": "Autre",
+                                    "options": {
+                                      "grid": {
+                                        "md": 4,
+                                        "sm": 4,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/adresseEmployeur",
+                                "label": "Adresse Employeur"
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/employeur",
+                                "label": "Employeur"
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/typeContrat",
+                                    "label": "Type Contrat",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/ancienneteActivite",
+                                    "label": "Ancienneté dans l’activité",
+                                    "options": {
+                                      "options": {
+                                        "max": 1000,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "format": "default",
+                                        "suffix": "ans",
+                                        "decimalPlaces": 0,
+                                        "thousandSeparator": " "
+                                      },
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/periodeEssai",
+                                "label": "Période d'essai"
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/secteur",
+                                    "label": "Secteur",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/activite",
+                                    "label": "Activité / Profession",
+                                    "options": {
+                                      "grid": {
+                                        "md": 6,
+                                        "sm": 6,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/AncienneteExistanceEmployeur",
+                                "label": "Ancienneté Existance Employeur",
+                                "options": {
+                                  "options": {
+                                    "max": 1000,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "default",
+                                    "suffix": "ans",
+                                    "decimalPlaces": 0,
+                                    "thousandSeparator": " "
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ],
+                        "rule": {
+                          "effect": "SHOW",
+                          "condition": {
+                            "scope": "#/properties/segment",
+                            "schema": {
+                              "const": "Personne Physique"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "Group",
+                        "label": "Informations Bancaires",
+                        "options": {
+                          "variant": "collapse"
+                        },
+                        "elements": [
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/domicilierChez",
+                                "label": "Domicilier Chez",
+                                "options": {
+                                  "grid": {
+                                    "md": 4,
+                                    "sm": 4,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/nCompte",
+                                "label": "N° Compte",
+                                "options": {
+                                  "grid": {
+                                    "md": 4,
+                                    "sm": 4,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/IBAN",
+                                "label": "IBAN",
+                                "options": {
+                                  "grid": {
+                                    "md": 4,
+                                    "sm": 4,
+                                    "xs": 12
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ],
+                    "options": {
+                      "readOnly": true
+                    },
+                    "rule": {
+                      "effect": "HIDE",
+                      "condition": {
+                        "scope": "#/properties/prospect",
+                        "schema": {
+                          "type": "array",
+                          "contains": {
+                            "const": "Oui"
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Category",
+            "elements": [
+              {
+                "type": "Group",
+                "elements": [
+                  {
+                    "type": "Group",
+                    "elements": [
+                      {
+                        "type": "VerticalLayout",
+                        "elements": [
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/groupeProduit",
+                                "options": {
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 6,
+                                    "md": 3
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/produit",
+                                "options": {
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 6,
+                                    "md": 3
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/montantMin",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "step": 5,
+                                    "suffix": "Ar",
+                                    "decimalPlaces": 3,
+                                    "decimalSeparator": ",",
+                                    "thousandSeparator": " ",
+                                    "format": "currency"
+                                  },
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 6,
+                                    "md": 3
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/montantMax",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "step": 5,
+                                    "suffix": "Ar",
+                                    "decimalPlaces": 3,
+                                    "decimalSeparator": ",",
+                                    "thousandSeparator": " ",
+                                    "format": "currency"
+                                  },
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 6,
+                                    "md": 3
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/duree",
+                                "options": {
+                                  "format": "radio",
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 9,
+                                    "md": 6
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/objetDuCredit",
+                                "options": {
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 9,
+                                    "md": 6
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/tauxInteretAnnuel",
+                                "options": {
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 6,
+                                    "md": 3
+                                  },
+                                  "options": {
+                                    "max": 100,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "suffix": "%",
+                                    "decimalPlaces": 3,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/tauxMin",
+                                "options": {
+                                  "options": {
+                                    "max": 100,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "suffix": "%",
+                                    "decimalPlaces": 3,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 6,
+                                    "md": 3
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/tauxMax",
+                                "options": {
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 6,
+                                    "md": 3
+                                  },
+                                  "options": {
+                                    "max": 100,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "suffix": "%",
+                                    "decimalPlaces": 3,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/negociable",
+                                "options": {
+                                  "format": "radio",
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 6,
+                                    "md": 3
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ],
+                    "label": " Informations Crédit",
+                    "options": {
+                      "variant": "paper"
+                    }
+                  },
+                  {
+                    "type": "Group",
+                    "elements": [
+                      {
+                        "type": "Categorization",
+                        "label": "Pièces à fournir",
+                        "elements": [
+                          {
+                            "type": "Category",
+                            "elements": [
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/cinNumerisee",
+                                    "options": {
+                                      "component": "UploadFileControl",
+                                      "filesUploadSettings": {
+                                        "allowedExtensions": ["docx", "pdf"]
+                                      },
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 9,
+                                        "md": 6
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/certificatResidenceDemandeur",
+                                    "options": {
+                                      "component": "UploadFileControl",
+                                      "filesUploadSettings": {
+                                        "allowedExtensions": ["docx", "pdf"]
+                                      },
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 9,
+                                        "md": 6
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ],
+                            "label": "Documents Clients"
+                          },
+                          {
+                            "type": "Category",
+                            "elements": [
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/devisProforma",
+                                    "options": {
+                                      "component": "UploadFileControl",
+                                      "filesUploadSettings": {
+                                        "allowedExtensions": ["docx", "pdf"]
+                                      },
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 9,
+                                        "md": 6
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/photocopieCarnetFokontany",
+                                    "options": {
+                                      "component": "UploadFileControl",
+                                      "filesUploadSettings": {
+                                        "allowedExtensions": ["docx", "pdf"]
+                                      },
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 9,
+                                        "md": 6
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ],
+                            "label": "Autres documents"
+                          }
+                        ]
+                      }
+                    ],
+                    "label": "Pièces à fournir",
+                    "options": {
+                      "variant": "paper"
+                    }
+                  },
+                  {
+                    "type": "Group",
+                    "elements": [
+                      {
+                        "type": "VerticalLayout",
+                        "elements": [
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/fluxTresorerie",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "step": 5,
+                                    "suffix": "Ar",
+                                    "decimalPlaces": 3,
+                                    "decimalSeparator": ",",
+                                    "thousandSeparator": " ",
+                                    "format": "currency"
+                                  },
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 6,
+                                    "md": 4
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/capaciteRemboursementDscr",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "step": 5,
+                                    "suffix": "Ar",
+                                    "decimalPlaces": 3,
+                                    "decimalSeparator": ",",
+                                    "thousandSeparator": " ",
+                                    "format": "currency"
+                                  },
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 6,
+                                    "md": 4
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/chiffreAffaires",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "step": 5,
+                                    "suffix": "Ar",
+                                    "decimalPlaces": 3,
+                                    "decimalSeparator": ",",
+                                    "thousandSeparator": " ",
+                                    "format": "currency"
+                                  },
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 6,
+                                    "md": 4
+                                  }
+                                }
+                              }
+                            ],
+                            "rule": {
+                              "effect": "SHOW",
+                              "condition": {
+                                "scope": "#/properties/segment",
+                                "schema": {
+                                  "const": "Personne Morale"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/salaireNetHorsIndemniteVariable",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "step": 5,
+                                    "suffix": "Ar",
+                                    "decimalPlaces": 3,
+                                    "decimalSeparator": ",",
+                                    "thousandSeparator": " ",
+                                    "format": "currency"
+                                  },
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 9,
+                                    "md": 6
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/quotiteCessibleLegal",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "step": 5,
+                                    "suffix": "Ar",
+                                    "decimalPlaces": 3,
+                                    "decimalSeparator": ",",
+                                    "thousandSeparator": " ",
+                                    "format": "currency"
+                                  },
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 9,
+                                    "md": 6
+                                  }
+                                }
+                              }
+                            ],
+                            "rule": {
+                              "effect": "SHOW",
+                              "condition": {
+                                "scope": "#/properties/segment",
+                                "schema": {
+                                  "const": "Personne Physique"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ],
+                    "label": " Situation financière Client",
+                    "options": {
+                      "variant": "paper"
+                    },
+                    "rule": {
+                      "effect": "HIDE",
+                      "condition": {
+                        "scope": "#/properties/prospect",
+                        "schema": {
+                          "type": "array",
+                          "contains": {
+                            "const": "Oui"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Group",
+                    "elements": [
+                      {
+                        "type": "VerticalLayout",
+                        "elements": [
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/fluxTresorerie",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "step": 5,
+                                    "suffix": "Ar",
+                                    "decimalPlaces": 3,
+                                    "decimalSeparator": ",",
+                                    "thousandSeparator": " ",
+                                    "format": "currency"
+                                  },
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 6,
+                                    "md": 4
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/capaciteRemboursementDscr",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "step": 5,
+                                    "suffix": "Ar",
+                                    "decimalPlaces": 3,
+                                    "decimalSeparator": ",",
+                                    "thousandSeparator": " ",
+                                    "format": "currency"
+                                  },
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 6,
+                                    "md": 4
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/chiffreAffaires",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "step": 5,
+                                    "suffix": "Ar",
+                                    "decimalPlaces": 3,
+                                    "decimalSeparator": ",",
+                                    "thousandSeparator": " ",
+                                    "format": "currency"
+                                  },
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 6,
+                                    "md": 4
+                                  }
+                                }
+                              }
+                            ],
+                            "rule": {
+                              "effect": "SHOW",
+                              "condition": {
+                                "scope": "#/properties/segment",
+                                "schema": {
+                                  "const": "Personne Morale"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/salaireNetHorsIndemniteVariable",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "step": 5,
+                                    "suffix": "Ar",
+                                    "decimalPlaces": 3,
+                                    "decimalSeparator": ",",
+                                    "thousandSeparator": " ",
+                                    "format": "currency"
+                                  },
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 9,
+                                    "md": 6
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/quotiteCessibleLegal",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "step": 5,
+                                    "suffix": "Ar",
+                                    "decimalPlaces": 3,
+                                    "decimalSeparator": ",",
+                                    "thousandSeparator": " ",
+                                    "format": "currency"
+                                  },
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 9,
+                                    "md": 6
+                                  }
+                                }
+                              }
+                            ],
+                            "rule": {
+                              "effect": "SHOW",
+                              "condition": {
+                                "scope": "#/properties/segment",
+                                "schema": {
+                                  "const": "Personne Physique"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ],
+                    "label": " Situation financière Client",
+                    "options": {
+                      "variant": "paper"
+                    },
+                    "rule": {
+                      "effect": "SHOW",
+                      "condition": {
+                        "scope": "#/properties/prospect",
+                        "schema": {
+                          "type": "array",
+                          "contains": {
+                            "const": "Oui"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Group",
+                    "elements": [
+                      {
+                        "type": "Group",
+                        "elements": [
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/dateEntreeEnRelation",
+                                "options": {
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 9,
+                                    "md": 6
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/anciennete",
+                                "options": {
+                                  "options": {
+                                    "max": 1000,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "default",
+                                    "suffix": "ans",
+                                    "decimalPlaces": 0,
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 9,
+                                    "md": 6
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ],
+                        "label": "Ancienneté relation bancaire",
+                        "rule": {
+                          "effect": "SHOW",
+                          "condition": {
+                            "scope": "#/properties/segment",
+                            "schema": {
+                              "const": "Personne Morale"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "Group",
+                        "elements": [
+                          {
+                            "type": "VerticalLayout",
+                            "elements": [
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/creditsEnCours",
+                                    "options": {
+                                      "options": {
+                                        "max": 9007199254740991,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "step": 5,
+                                        "suffix": "Ar",
+                                        "decimalPlaces": 3,
+                                        "decimalSeparator": ",",
+                                        "thousandSeparator": " ",
+                                        "format": "currency"
+                                      },
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 9,
+                                        "md": 6
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/creditsContractes",
+                                    "options": {
+                                      "options": {
+                                        "max": 9007199254740991,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "step": 5,
+                                        "suffix": "Ar",
+                                        "decimalPlaces": 3,
+                                        "decimalSeparator": ",",
+                                        "thousandSeparator": " ",
+                                        "format": "currency"
+                                      },
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 9,
+                                        "md": 6
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/incidentsPaiement",
+                                    "options": {
+                                      "options": {
+                                        "max": 100000,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "allowNegative": false,
+                                        "format": "default",
+                                        "suffix": "incidents"
+                                      },
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 9,
+                                        "md": 6
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/realisation",
+                                    "options": {
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 9,
+                                        "md": 6
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ],
+                        "label": "Crédit antérieur",
+                        "rule": {
+                          "effect": "SHOW",
+                          "condition": {
+                            "scope": "#/properties/segment",
+                            "schema": {
+                              "const": "Personne Morale"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "Group",
+                        "elements": [
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/dateEntreeEnRelation",
+                                "options": {
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 9,
+                                    "md": 6
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/client/properties/anciennete",
+                                "options": {
+                                  "options": {
+                                    "max": 1000,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "default",
+                                    "suffix": "ans",
+                                    "decimalPlaces": 0,
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 9,
+                                    "md": 6
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ],
+                        "label": "Ancienneté relation bancaire",
+                        "rule": {
+                          "effect": "SHOW",
+                          "condition": {
+                            "scope": "#/properties/segment",
+                            "schema": {
+                              "const": "Personne Physique"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "Group",
+                        "elements": [
+                          {
+                            "type": "VerticalLayout",
+                            "elements": [
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/endettementEnCoursLieSalaire",
+                                    "options": {
+                                      "options": {
+                                        "max": 9007199254740991,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "step": 5,
+                                        "suffix": "Ar",
+                                        "decimalPlaces": 3,
+                                        "decimalSeparator": ",",
+                                        "thousandSeparator": " ",
+                                        "format": "currency"
+                                      },
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 6,
+                                        "md": 3
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/prelevementFixe",
+                                    "options": {
+                                      "options": {
+                                        "max": 9007199254740991,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "step": 5,
+                                        "suffix": "Ar",
+                                        "decimalPlaces": 3,
+                                        "decimalSeparator": ",",
+                                        "thousandSeparator": " ",
+                                        "format": "currency"
+                                      },
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 6,
+                                        "md": 3
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/netApresEndettement",
+                                    "options": {
+                                      "options": {
+                                        "max": 9007199254740991,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "step": 5,
+                                        "suffix": "Ar",
+                                        "decimalPlaces": 3,
+                                        "decimalSeparator": ",",
+                                        "thousandSeparator": " ",
+                                        "format": "currency"
+                                      },
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 6,
+                                        "md": 3
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/quotiteCessibleZarasoa",
+                                    "options": {
+                                      "options": {
+                                        "max": 9007199254740991,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "step": 5,
+                                        "suffix": "Ar",
+                                        "decimalPlaces": 3,
+                                        "decimalSeparator": ",",
+                                        "thousandSeparator": " ",
+                                        "format": "currency"
+                                      },
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 6,
+                                        "md": 3
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/incidentsPaiement",
+                                    "options": {
+                                      "options": {
+                                        "max": 100000,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "allowNegative": false,
+                                        "format": "default",
+                                        "suffix": "incidents"
+                                      },
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 9,
+                                        "md": 6
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/client/properties/realisation",
+                                    "options": {
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 9,
+                                        "md": 6
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ],
+                        "label": "Crédit antérieur",
+                        "rule": {
+                          "effect": "SHOW",
+                          "condition": {
+                            "scope": "#/properties/segment",
+                            "schema": {
+                              "const": "Personne Physique"
+                            }
+                          }
+                        }
+                      }
+                    ],
+                    "label": "Profil Relationnel et Risque Client",
+                    "options": {
+                      "variant": "paper"
+                    },
+                    "rule": {
+                      "effect": "HIDE",
+                      "condition": {
+                        "scope": "#/properties/prospect",
+                        "schema": {
+                          "type": "array",
+                          "contains": {
+                            "const": "Oui"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Group",
+                    "elements": [
+                      {
+                        "type": "Group",
+                        "elements": [
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/dateEntreeEnRelation",
+                                "options": {
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 9,
+                                    "md": 6
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/anciennete",
+                                "options": {
+                                  "options": {
+                                    "max": 1000,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "default",
+                                    "suffix": "ans",
+                                    "decimalPlaces": 0,
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 9,
+                                    "md": 6
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ],
+                        "label": "Ancienneté relation bancaire",
+                        "rule": {
+                          "effect": "SHOW",
+                          "condition": {
+                            "scope": "#/properties/segment",
+                            "schema": {
+                              "const": "Personne Morale"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "Group",
+                        "elements": [
+                          {
+                            "type": "VerticalLayout",
+                            "elements": [
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/creditsEnCours",
+                                    "options": {
+                                      "options": {
+                                        "max": 9007199254740991,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "step": 5,
+                                        "suffix": "Ar",
+                                        "decimalPlaces": 3,
+                                        "decimalSeparator": ",",
+                                        "thousandSeparator": " ",
+                                        "format": "currency"
+                                      },
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 9,
+                                        "md": 6
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/creditsContractes",
+                                    "options": {
+                                      "options": {
+                                        "max": 9007199254740991,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "step": 5,
+                                        "suffix": "Ar",
+                                        "decimalPlaces": 3,
+                                        "decimalSeparator": ",",
+                                        "thousandSeparator": " ",
+                                        "format": "currency"
+                                      },
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 9,
+                                        "md": 6
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/incidentsPaiement",
+                                    "options": {
+                                      "options": {
+                                        "max": 100000,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "allowNegative": false,
+                                        "format": "default",
+                                        "suffix": "incidents"
+                                      },
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 9,
+                                        "md": 6
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/realisation",
+                                    "options": {
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 9,
+                                        "md": 6
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ],
+                        "label": "Crédit antérieur",
+                        "rule": {
+                          "effect": "SHOW",
+                          "condition": {
+                            "scope": "#/properties/segment",
+                            "schema": {
+                              "const": "Personne Morale"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "Group",
+                        "elements": [
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/dateEntreeEnRelation",
+                                "options": {
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 9,
+                                    "md": 6
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/nonClient/properties/anciennete",
+                                "options": {
+                                  "options": {
+                                    "max": 1000,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "default",
+                                    "suffix": "ans",
+                                    "decimalPlaces": 0,
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "xs": 12,
+                                    "sm": 9,
+                                    "md": 6
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ],
+                        "label": "Ancienneté relation bancaire",
+                        "rule": {
+                          "effect": "SHOW",
+                          "condition": {
+                            "scope": "#/properties/segment",
+                            "schema": {
+                              "const": "Personne Physique"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "Group",
+                        "elements": [
+                          {
+                            "type": "VerticalLayout",
+                            "elements": [
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/endettementEnCoursLieSalaire",
+                                    "options": {
+                                      "options": {
+                                        "max": 9007199254740991,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "step": 5,
+                                        "suffix": "Ar",
+                                        "decimalPlaces": 3,
+                                        "decimalSeparator": ",",
+                                        "thousandSeparator": " ",
+                                        "format": "currency"
+                                      },
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 6,
+                                        "md": 3
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/prelevementFixe",
+                                    "options": {
+                                      "options": {
+                                        "max": 9007199254740991,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "step": 5,
+                                        "suffix": "Ar",
+                                        "decimalPlaces": 3,
+                                        "decimalSeparator": ",",
+                                        "thousandSeparator": " ",
+                                        "format": "currency"
+                                      },
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 6,
+                                        "md": 3
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/netApresEndettement",
+                                    "options": {
+                                      "options": {
+                                        "max": 9007199254740991,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "step": 5,
+                                        "suffix": "Ar",
+                                        "decimalPlaces": 3,
+                                        "decimalSeparator": ",",
+                                        "thousandSeparator": " ",
+                                        "format": "currency"
+                                      },
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 6,
+                                        "md": 3
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/quotiteCessibleZarasoa",
+                                    "options": {
+                                      "options": {
+                                        "max": 9007199254740991,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "step": 5,
+                                        "suffix": "Ar",
+                                        "decimalPlaces": 3,
+                                        "decimalSeparator": ",",
+                                        "thousandSeparator": " ",
+                                        "format": "currency"
+                                      },
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 6,
+                                        "md": 3
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/incidentsPaiement",
+                                    "options": {
+                                      "options": {
+                                        "max": 100000,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "allowNegative": false,
+                                        "format": "default",
+                                        "suffix": "incidents"
+                                      },
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 9,
+                                        "md": 6
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/nonClient/properties/realisation",
+                                    "options": {
+                                      "grid": {
+                                        "xs": 12,
+                                        "sm": 9,
+                                        "md": 6
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ],
+                        "label": "Crédit antérieur",
+                        "rule": {
+                          "effect": "SHOW",
+                          "condition": {
+                            "scope": "#/properties/segment",
+                            "schema": {
+                              "const": "Personne Physique"
+                            }
+                          }
+                        }
+                      }
+                    ],
+                    "label": "Profil Relationnel et Risque Client",
+                    "options": {
+                      "variant": "paper"
+                    },
+                    "rule": {
+                      "effect": "SHOW",
+                      "condition": {
+                        "scope": "#/properties/prospect",
+                        "schema": {
+                          "type": "array",
+                          "contains": {
+                            "const": "Oui"
+                          }
+                        }
+                      }
+                    }
+                  }
+                ],
+                "label": " Information Prêt",
+                "options": {
+                  "variant": "accordion"
+                }
+              }
+            ],
+            "label": "Information Prêt"
           }
         ]
       },
-      "scripts": [],
+      "scripts": [
+        "//Informations Demandeur \n const listErrors = [];  \n function isEmpty(value) { \n   return ( \n     value == null || \n     value === '' || \n     (Array.isArray(value) && value.length === 0) \n   ); \n } \n  \n  \n //prospect \n if (data['id'] === 'Client' && data['prospect'] && data['prospect'].includes('Oui')) { \n     listErrors.push(utils.error('prospect', `ce client existe deja il ne peut etre un prospect.`)); \n } \n // this shows for few min then fade   \n // if ( data['codeClient'] && !data['id'] && (isEmpty(data['prospect']) || !data['prospect']) ) { listErrors.push(utils.error('prospect', `Ce champ est obligatoire.`)); } \n  \n // if prospect : \n // morale : raison sociale , denomination sociale, telephone ou email  \n // physique : nom , prenom , telephone ou email \n let nonClient = data['nonClient'] || {}; \n  \n if (data['id'] !== 'Client' ) { \n     //required \n     if(data['segment'] === 'Personne Morale') { \n         if ( isEmpty(nonClient['raisonSociale']) ) { listErrors.push(utils.error('nonClient.raisonSociale', `Ce champ est obligatoire.`)); } \n         if ( isEmpty(nonClient['denominationSociale']) ) { listErrors.push(utils.error('nonClient.denominationSociale', `Ce champ est obligatoire.`)); } \n     } else { \n         if ( isEmpty(nonClient['nom']) ) { listErrors.push(utils.error('nonClient.nom', `Ce champ est obligatoire.`)); } \n         if ( isEmpty(nonClient['prenom']) ) { listErrors.push(utils.error('nonClient.prenom', `Ce champ est obligatoire.`)); } \n     } \n     if ( isEmpty(nonClient['telephone']) && isEmpty(nonClient['email']) ) { listErrors.push(utils.error('nonClient.telephone', `Ce champ est obligatoire.`)); listErrors.push(utils.error('nonClient.email', `Ce champ est obligatoire.`));} \n  \n     // regEx \n     // phone \n     if (!isEmpty(nonClient['telephone']) && !/^0\\d{8,9}$/.test(nonClient['telephone']) ){ listErrors.push(utils.error('nonClient.telephone','Ce champ doit être un numéro de téléphone valide.')); } \n     // email \n     if (!isEmpty(nonClient['email']) && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(nonClient['email']) ){ listErrors.push(utils.error('nonClient.email','Ce champ doit être une adresse email valide.')); } \n     // numerique \n     const numFields = ['nif','stat','nCNI','nCompte','IBAN','BP']; \n     numFields.forEach((field) => { \n       if (!isEmpty(nonClient[field]) && !/^[0-9 ]+$/.test(nonClient[field]) ){  \n         listErrors.push(utils.error(`nonClient.${field}`,'Ce champ doit contenir uniquement des chiffres et des espaces.')); \n       } \n     }); \n     // dates \n     const dateFieldsProspect = ['dateCreation','dateNaissance','dateDelivranceCIN']; \n     dateFieldsProspect.forEach((field) => { \n         if (!isEmpty(nonClient[field])) { \n             const inputDate = new Date(nonClient[field]); \n             const today = new Date(); \n             today.setHours(0,0,0,0); // Ignore time part \n             if (inputDate <= today) { \n                 listErrors.push(utils.error(`nonClient.${field}`, String.raw`La date doit être postérieure à aujourd’hui.`)); \n             } \n         } \n     }); \n } \n  \n  \n return listErrors;",
+        "//prospect \n const listErrors = [];  \n function isEmpty(value) { \n   return ( \n     value == null || \n     value === '' || \n     (Array.isArray(value) && value.length === 0) \n   ); \n } \n if ( data['codeClient'] && !data['id'] && (isEmpty(data['prospect']) || !data['prospect']) ) { listErrors.push(utils.error('prospect', `Ce champ est obligatoire`)); } \n return listErrors;"
+      ],
       "transformers": []
     },
     "formulaireVisiteCaution": {
@@ -701,28 +4419,28 @@
     }
   ],
   "view": {
-      "chronologie": {
-          "defaultOpen": false
-      },
-      "Informations": {
-          "defaultOpen": true
-      }
+    "chronologie": {
+      "defaultOpen": false
+    },
+    "Informations": {
+      "defaultOpen": true
+    }
   },
   "relationCase": {
     "defaultProperties": [],
     "displayMode": "vertical"
   },
-  "filterCategory": [{
-    "code": "ODC_filterCategory",
-    "label": "Octroi De Crédit",
-    "rank": "1",
-    "icon": "RequestQuote",
-    "condition": {
-      "or": [
-          { "in": ["GROUP_ADMIN", { "var": "user.groups" }] }
-      ] 
-    }              
-  }],
+  "filterCategory": [
+    {
+      "code": "ODC_filterCategory",
+      "label": "Octroi De Crédit",
+      "rank": "1",
+      "icon": "RequestQuote",
+      "condition": {
+        "or": [{ "in": ["GROUP_ADMIN", { "var": "user.groups" }] }]
+      }
+    }
+  ],
   "filters": [
     {
       "code": "ODC_Creation",
@@ -731,9 +4449,7 @@
       "rank": 1,
       "filterCategoryCode": "ODC_filterCategory",
       "condition": {
-        "or": [
-          { "in": ["GROUP_ADMIN", { "var": "user.groups" }] }
-        ]
+        "or": [{ "in": ["GROUP_ADMIN", { "var": "user.groups" }] }]
       },
       "schema": {
         "type": "activity",
@@ -812,9 +4528,7 @@
       "rank": 29,
       "filterCategoryCode": "ODC_filterCategory",
       "condition": {
-        "or": [
-          { "in": ["GROUP_ADMIN", { "var": "user.groups" }] }
-        ]
+        "or": [{ "in": ["GROUP_ADMIN", { "var": "user.groups" }] }]
       },
       "schema": {
         "type": "case",
