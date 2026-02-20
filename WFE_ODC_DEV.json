@@ -236,7 +236,6 @@
       "form": "formulaireVisiteCaution",
       "data": {},
       "icon": "Task",
-      "owner": "AGENT Assurance",
       "params": {},
       "inputs": [
         {
@@ -249,10 +248,41 @@
           "code": "output"
         }
       ],
-      "caseContext": {}
+      "caseContext": {
+        "nature": "{{data.nature}}",
+        "patrimoines": "{{data.patrimoines}}",
+        "engagements": "{{data.engagements}}"
+      }
     },
-    "analyseCredit": {
-      "code": "analyseCredit",
+    "jsVisiteCaution": {
+      "code": "jsVisiteCaution",
+      "type": "simple",
+      "service": "JsNode",
+      "params": {
+        "script": "function calculeToT_VisiteCaution(context) { \n     let patrimoines = (context.patrimoines || []).map(item => { \n         let totalValeurBrut = \n             (item.foncierHorsBilan || 0) + \n             (item.residencePrincipale || 0) + \n             (item.residenceSecondaire || 0) + \n             (item.residenceLocative || 0) + \n             (item.epargneStable || 0) + \n             (item.caisse || 0) + \n             (item.pretAvancesClientele || 0) + \n             (item.autres || 0); \n  \n         return { \n             ...item, \n             totalValeurBrut: totalValeurBrut \n         }; \n     }); \n  \n     let engagements = (context.engagements || []).map(item => { \n         let totalEncoursLies = \n             (item.foncierHorsBilanEngagements || 0) + \n             (item.habitat || 0) + \n             (item.creditFDR || 0) + \n             (item.encoursConcurrence || 0); \n  \n         return { \n             ...item, \n             totalEncoursLies: totalEncoursLies \n         }; \n     }); \n  \n     return { \n         patrimoines: patrimoines, \n         engagements: engagements \n     }; \n } \n  \n return calculeToT_VisiteCaution(context); \n "
+      },
+      "inputs": [
+        {
+          "code": "input"
+        }
+      ],
+      "outputs": [
+        {
+          "code": "success",
+          "label": ""
+        },
+        {
+          "code": "failure",
+          "label": ""
+        }
+      ],
+      "caseContext": {
+        "patrimoines": "{{result.patrimoines}}",
+        "engagements": "{{result.engagements}}"
+      }
+    },
+    "analyseCreditN1": {
+      "code": "analyseCreditN1",
       "codeTemplate": "ODC-{{_count.case[10]}}",
       "label": "Analyse de crédit",
       "type": "activity",
@@ -297,7 +327,7 @@
           }
         }
       },
-      "form": "formulaireVisiteCaution",
+      "form": "formulaireAnalyseN1",
       "data": {},
       "icon": "Task",
       "owner": "AGENT Assurance",
@@ -315,10 +345,10 @@
       ],
       "caseContext": {}
     },
-    "conformiteN1": {
-      "code": "conformiteN1",
+    "analyseCreditN2": {
+      "code": "analyseCreditN2",
       "codeTemplate": "ODC-{{_count.case[10]}}",
-      "label": "Demande Conformité N1",
+      "label": "Analyse de crédit",
       "type": "activity",
       "service": "SimpleActivityNode",
       "start": false,
@@ -361,71 +391,7 @@
           }
         }
       },
-      "form": "formulaireVisiteCaution",
-      "data": {},
-      "icon": "Task",
-      "owner": "AGENT Assurance",
-      "params": {},
-      "inputs": [
-        {
-          "code": "input"
-        }
-      ],
-      "outputs": [
-        {
-          "label": "",
-          "code": "output"
-        }
-      ],
-      "caseContext": {}
-    },
-    "conformiteN2": {
-      "code": "conformiteN2",
-      "codeTemplate": "ODC-{{_count.case[10]}}",
-      "label": "Demande Conformité N2",
-      "type": "activity",
-      "service": "SimpleActivityNode",
-      "start": false,
-      "startCondition": {
-        "or": [
-          {
-            "in": [
-              "GROUP_ADMIN",
-              {
-                "var": "user.groups"
-              }
-            ]
-          }
-        ]
-      },
-      "actionParams": {
-        "submit": {
-          "label": "Soumettre"
-        }
-      },
-      "actions": {
-        "owner": {
-          "assign": true,
-          "self-assign": true
-        },
-        "group": {},
-        "caseOwner": {},
-        "caseCreatedBy": {},
-        "roles": {
-          "R_READ_ALL": {},
-          "R_WRITE_ALL": {}
-        },
-        "groups": {
-          "GROUP_ADMIN": {
-            "details": true,
-            "comment": true,
-            "submit": true,
-            "assign": true,
-            "self-assign": true
-          }
-        }
-      },
-      "form": "formulaireVisiteCaution",
+      "form": "formulaireAnalyseN1",
       "data": {},
       "icon": "Task",
       "owner": "AGENT Assurance",
@@ -636,6 +602,124 @@
       "caseContext": {}
     },
 
+    "simulationFolderView": {
+      "code": "simulationFolderView",
+      "label": "Simulation",
+      "caseStatus": "",
+      "codeTemplate": "ODC-{{_count[10]}}",
+      "type": "activity",
+      "service": "SimpleActivityNode",
+      "start": false,
+      "resume": true,
+      "resumeCondition": {
+        "in": ["GROUP_ADMIN", { "var": "user.groups" }]
+      },
+      "form": "formulaireSimulation",
+      "owner": "GROUP_ADMIN",
+      "params": {},
+      "actionParams": {
+        "submit": {
+          "label": "Simuler"
+        }
+      },
+      "caseContext": {
+        "age" : "{{data.age}}",
+        "simulateurInputs": "{{data.simulateurInputs}}"
+      },
+      "inputs": [{ "label": "", "code": "input" }],
+      "outputs": [{ "label": "", "code": "output" }]
+    },
+    "getSimulationInputData": {
+      "type": "simple",
+      "service": "RestNode",
+      "code": "getSimulationInputData",
+      "params": {
+        "requestTemplate": {
+          "method": "GET",
+          "url": "https://sipem-dev-strapi-makina.kepler-technologies.com/api/charges-taux/info",
+          "params": {
+            "groupe_produit": "{{groupeProduit}}",
+            "Produit": "{{produit}}",
+            "AGE": "{{age}}"
+          }
+        }
+      },
+      "caseContext": {
+        "type_credit": "{{type_credit}}",
+        "taux_frais": "{{taux_frais}}",
+        "taux_tva": "{{taux_tva}}",
+        "assurance": "{{assurance}}"
+      },
+      "inputs": [
+        {
+          "label": "Donnée Input",
+          "code": "input"
+        }
+      ],
+      "outputs": [
+        {
+          "label": "Succès",
+          "code": "success"
+        },
+        {
+          "label": "",
+          "code": "failure"
+        }
+      ]
+    },
+    "jsPrepareSimulationInputData": {
+      "code": "jsPrepareSimulationInputData",
+      "type": "simple",
+      "service": "JsNode",
+      "params": {
+        "script": "function prepareSimulationInput(context){const simulateurVariables=context.simulateurInputs;if(!Array.isArray(simulateurVariables)||simulateurVariables.length===0){throw new Error(\"simulateurVariables est vide ou absent.\")}const type_credit=context.type_credit;const taux_frais=context.taux_frais||{};const taux_tva=context.taux_tva||0;const assurance=context.assurance||0;const taux_fgs=taux_frais.fgs??0;const taux_dit=taux_frais.dit??0;const simulationInputTable=simulateurVariables.map((row,index)=>{const{dateDebutPret,montantPret,dureePret}=row;const taux_annuel=context.tauxInteretAnnuel;return{montant_pret:montantPret,taux_annuel:taux_annuel,duree_mois:dureePret,date_debut:dateDebutPret,type_credit:type_credit,taux_frais:{fgs:taux_fgs,dit:taux_dit},taux_tva:taux_tva,assurance:assurance}});return{simulationInputTable}}try{return prepareSimulationInput(context)}catch(error){console.error(\"Erreur lors du preparation des données de simulation:\",error);return{message:\"Erreur lors du preparation des données de simulation:\"}}"
+      },
+      "inputs": [
+        {
+          "code": "input"
+        }
+      ],
+      "outputs": [
+        {
+          "code": "success",
+          "label": ""
+        },
+        {
+          "code": "failure",
+          "label": ""
+        }
+      ],
+      "caseContext": {
+        "simulationInputTable": "{{result.simulationInputTable}}"
+      }
+    },
+    "jsSimulationAlgorithm": {
+      "code": "jsSimulationAlgorithm",
+      "type": "simple",
+      "service": "JsNode",
+      "params": {
+        "script": "function simulationAlgorithme(context){function round2(value){return Math.round(value*100)/100}const inputTable=context.simulationInputTable;const simulateurVariables=context.simulateurInputs;if(!Array.isArray(inputTable)||inputTable.length===0){throw new Error(\"Table Simulation est vide ou absent dans le contexte.\")}const results=inputTable.map((row,rowIndex)=>{const{montant_pret,taux_annuel,duree_mois,date_debut,type_credit,taux_frais={},taux_tva,assurance,ancien_crd,paiements}=row;const taux_fgs=(taux_frais.fgs??0)/100;const taux_dit=(taux_frais.dit??0)/100;taux_annuel_conversion=(taux_annuel??0)/100;taux_tva_conversion=(taux_tva??0)/100;assurance_conversion=(assurance??0)/100;if(montant_pret==null||montant_pret<=0){throw new Error(`Ligne ${rowIndex+1}: Montant_pret invalide (${montant_pret}).`)}if(!duree_mois||duree_mois<=0){throw new Error(`Ligne ${rowIndex+1}: Durée_mois doit être > 0.`)}if(!type_credit){throw new Error(`Ligne ${rowIndex+1}: Type_credit est requis.`)}let montant_effectif=montant_pret;let duree_effective=duree_mois;let taux_effectif=taux_annuel_conversion;let type_effectif=type_credit.toLowerCase().trim();if(type_effectif===\"restructuration\"){if(ancien_crd==null||paiements==null){throw new Error(`Ligne ${rowIndex+1}: Restructuration requiert ancien_crd et paiements.`)}montant_effectif=ancien_crd-paiements;duree_effective=row.nouvelle_duree??duree_mois;taux_effectif=row.nouveau_taux??taux_annuel_conversion;type_effectif=\"degressif\"}const taux_mensuel=taux_effectif/12;let CRD=montant_effectif;let cumul_interets=0;let mensualite_hs;if(type_effectif===\"flat\"){const interet_total=montant_effectif*taux_effectif*(duree_effective/12);const interet_mensuel=interet_total/duree_effective;const capital_mensuel=montant_effectif/duree_effective;mensualite_hs=capital_mensuel+interet_mensuel}else{if(taux_mensuel===0){mensualite_hs=montant_effectif/duree_effective}else{mensualite_hs=montant_effectif*(taux_mensuel/(1-Math.pow(1+taux_mensuel,-duree_effective)))}}const fgs=montant_effectif*taux_fgs;const dit=montant_effectif*taux_dit;const total_frais=fgs+dit;const assurance_mensuelle=assurance_conversion??0;const tableau_amortissement=[];const dateDebut=new Date(date_debut);for(let mois=1;mois<=duree_effective;mois++){const dateEcheance=new Date(dateDebut);dateEcheance.setMonth(dateDebut.getMonth()+mois);const labelDate=dateEcheance.toLocaleDateString(\"fr-FR\",{month:\"2-digit\",year:\"numeric\"});let interet,capital_rembourse;if(type_effectif===\"flat\"){interet=montant_effectif*taux_effectif*(1/12);capital_rembourse=mensualite_hs-interet}else{interet=CRD*taux_mensuel;capital_rembourse=mensualite_hs-interet}const crd_apres=Math.max(0,CRD-capital_rembourse);cumul_interets=cumul_interets+interet;const tva_interets=taux_tva_conversion;tableau_amortissement.push({dateAmortissement:labelDate,nEcheance:mois,mensualiteAssurance:round2(mensualite_hs+assurance_mensuelle),mensualitHorsAssurance:round2(mensualite_hs),interets:round2(interet),TVAinterets:round2(tva_interets),assurance:round2(assurance_mensuelle),capitalRembourse:round2(capital_rembourse),capitalRestantDu:round2(crd_apres),cumulInterets:round2(cumul_interets)});CRD=crd_apres}return{type_credit,montant_effectif:round2(montant_effectif),duree_effective,taux_annuel_effectif:taux_effectif,mensualite_hors_assurance:round2(mensualite_hs),mensualite_avec_assurance:round2(mensualite_hs+assurance_mensuelle),total_interets:round2(cumul_interets),frais:{fgs:round2(fgs),dit:round2(dit),total_frais:round2(total_frais)},tableau_amortissement}});const simulateurInputs=results.map((result,index)=>{const simulateurRow=(simulateurVariables??[])[index]??{};return{...simulateurRow,tableau_amortissement:result.tableau_amortissement}});return{results,simulateurInputs}}try{return simulationAlgorithme(context)}catch(error){console.error(\"Erreur lors du simulation d'algorithm de crédit:\",error);return{message:\"Erreur lors du simulation de crédit.\"}}"
+      },
+      "inputs": [
+        {
+          "code": "input"
+        }
+      ],
+      "outputs": [
+        {
+          "code": "success",
+          "label": ""
+        },
+        {
+          "code": "failure",
+          "label": ""
+        }
+      ],
+      "caseContext": {
+        "simulateurInputs": "{{result.simulateurInputs}}"
+      }
+    },
+
     "end": {
       "code": "end",
       "service": "EndNode",
@@ -662,16 +746,25 @@
     { "source": { "node": "creation", "output": "output" },  "target": { "node": "getCodeZone", "input": "input" } },
     { "source": { "node": "getCodeZone", "output": "success" }, "target": { "node": "sqlCase", "input": "input" } },
     { "source": { "node": "sqlCase", "output": "success" }, "target": { "node": "visiteCaution", "input": "input" } },
-    { "source": { "node": "visiteCaution", "output": "output" }, "target": { "node": "analyseCredit", "input": "input" } },
-    { "source": { "node": "analyseCredit", "output": "output" }, "target": { "node": "conformiteN1", "input": "input" } },
-    { "source": { "node": "conformiteN1", "output": "output" }, "target": { "node": "conformiteN2", "input": "input" } },
-    { "source": { "node": "conformiteN2", "output": "output" },  "target": { "node": "comiteArbitrage", "input": "input" } },
+    { "source": { "node": "visiteCaution", "output": "output" }, "target": { "node": "jsVisiteCaution", "input": "input" } },
+    { "source": { "node": "jsVisiteCaution", "output": "success" }, "target": { "node": "analyseCreditN1", "input": "input" } },
+    { "source": { "node": "analyseCreditN1", "output": "output" }, "target": { "node": "analyseCreditN2", "input": "input" } },
+    { "source": { "node": "analyseCreditN2", "output": "output" },  "target": { "node": "comiteArbitrage", "input": "input" } },
     { "source": { "node": "comiteArbitrage", "output": "output" },  "target": { "node": "validationProposition", "input": "input" } },
     { "source": { "node": "validationProposition", "output": "output" },  "target": { "node": "integrationT24", "input": "input" } },
 
+    { "source": { "node": "simulationFolderView", "output": "output" },  "target": { "node": "getSimulationInputData", "input": "input" } },
+    { "source": { "node": "getSimulationInputData", "output": "success" },  "target": { "node": "jsPrepareSimulationInputData", "input": "input" } },
+    { "source": { "node": "jsPrepareSimulationInputData", "output": "success" },  "target": { "node": "jsSimulationAlgorithm", "input": "input" } },
+    { "source": { "node": "jsSimulationAlgorithm", "output": "success" },  "target": { "node": "end", "input": "input" } },
+
     { "source": { "node": "integrationT24", "output": "output" },  "target": { "node": "end", "input": "input" } },
-    {  "source": {  "node":  "sqlCase",  "output":  "failure" },  "target": {  "node":  "end",  "input":  "input" } },
-    { "source": { "node": "getCodeZone", "output": "failure" }, "target": { "node": "end", "input": "input" } }
+    { "source": { "node": "sqlCase", "output": "failure" }, "target": { "node": "end", "input": "input" } },
+    { "source": { "node": "getCodeZone", "output": "failure" }, "target": { "node": "end", "input": "input" } },
+    { "source": { "node": "jsVisiteCaution", "output": "failure" }, "target": { "node": "end", "input": "input" } },
+    { "source": { "node": "getSimulationInputData", "output": "failure" },  "target": { "node": "end", "input": "input" } },
+    { "source": { "node": "jsPrepareSimulationInputData", "output": "failure" },  "target": { "node": "end", "input": "input" } },
+    { "source": { "node": "jsSimulationAlgorithm", "output": "failure" },  "target": { "node": "end", "input": "input" } }
   ],
   "forms": {
     "formulaireCreation": {
@@ -1294,9 +1387,9 @@
                             },
                             "linkedFields": [],
                             "output": {
-                              "items": "{{data}}",
-                              "label": "{{codeClient}}",
-                              "value": "{{codeClient}}"
+                              "items": "{{data.body}}",
+                              "label": "{{codeclient}}",
+                              "value": "{{codeclient}}"
                             }
                           },
                           "linkFields": {
@@ -4363,8 +4456,10 @@
       "schema": {
         "type": "object",
         "required": [
-          "justificatifAdresseActivité",
-          "nature"
+          "justificatifAdresseActivite",
+          "nature",
+          "patrimoines",
+          "engagements"
         ],
         "properties": {
           "rapportVisite": {
@@ -4383,7 +4478,7 @@
               }
             }
           },
-          "justificatifAdresseActivité": {
+          "justificatifAdresseActivite": {
             "type": "array",
             "title": "Justificatif d’adresse de l’activité",
             "maxItems": 1,
@@ -4529,7 +4624,7 @@
           },
           "autresDocuments": {
             "type": "array",
-            "title": "Autres Documents",
+            "title": "Autres Documents (Tableau Résultat/Bilan/Synthèse Financiére)",
             "maxItems": 20,
             "items": {
               "type": "object",
@@ -4654,7 +4749,7 @@
                       },
                       {
                         "type": "Control",
-                        "scope": "#/properties/justificatifAdresseActivité",
+                        "scope": "#/properties/justificatifAdresseActivite",
                         "label": "Justificatif d’adresse de l’activité",
                         "options": {
                           "component": "UploadFileControl",
@@ -4899,7 +4994,7 @@
                   {
                     "type": "Control",
                     "scope": "#/properties/autresDocuments",
-                    "label": "Autres Documents",
+                    "label": "Autres Documents (Tableau Résultat/Bilan/Synthèse Financiére)",
                     "options": {
                       "component": "UploadFileControl",
                       "filesUploadSettings": {
@@ -5131,26 +5226,10 @@
                                 }
                               }
                             ]
-                          },
-                          {
-                            "type": "Control",
-                            "scope": "#/properties/totalValeurBrut",
-                            "label": "Total valeur brut",
-                            "options": {
-                              "options": {
-                                "max": 9007199254740991,
-                                "min": 0,
-                                "locale": "fr-FR",
-                                "format": "currency",
-                                "prefix": "MGA",
-                                "decimalPlaces": 2,
-                                "decimalSeparator": ".",
-                                "thousandSeparator": " "
-                              }
-                            }
                           }
                         ]
-                      }
+                      },
+                      "elementLabelProp": "nom"
                     }
                   },
                   {
@@ -5253,26 +5332,10 @@
                                 }
                               }
                             ]
-                          },
-                          {
-                            "type": "Control",
-                            "scope": "#/properties/totalEncoursLies",
-                            "label": "Total encours liés",
-                            "options": {
-                              "options": {
-                                "max": 9007199254740991,
-                                "min": 0,
-                                "locale": "fr-FR",
-                                "format": "currency",
-                                "prefix": "MGA",
-                                "decimalPlaces": 2,
-                                "decimalSeparator": ".",
-                                "thousandSeparator": " "
-                              }
-                            }
                           }
                         ]
-                      }
+                      },
+                      "elementLabelProp": "id"
                     }
                   }
                 ]
@@ -5281,7 +5344,708 @@
           }
         ]
       },
+      "scripts": [
+        "// required table beneficiaire  \n const listErrors = [];  \n   \n function isEmpty(value) {  \n   return (  \n     value == null ||  \n     value === '' ||  \n     (Array.isArray(value) && value.length === 0)  \n   );  \n }  \n  \n if (data['nature'] == 'Individuelle' ) {  \n     if ((data['patrimoines']).length > 1) {  \n         listErrors.push(utils.error('patrimoines', `Ce tableau ne peut contenir qu'une seule entrée.`));  \n     }  \n     if ((data['engagements']).length > 1) {  \n         listErrors.push(utils.error('engagements', `Ce tableau ne peut contenir qu'une seule entrée.`));  \n     }  \n }  \n  \n  \n //required inside tables \n let required = ['nom','foncierHorsBilan','residencePrincipale','residenceSecondaire','residenceLocative','epargneStable','caisse','pretAvancesClientele']; \n if (data.patrimoines) { \n   data.patrimoines.forEach((item, index) => { \n     required.forEach((field)=>{ \n         if(!item[field]) listErrors.push(utils.error(`patrimoines.${index}.${field}`, 'Ce champ est obligatoire.')); \n     }); \n   }); \n } \n required = ['foncierHorsBilanEngagements','habitat','creditFDR','encoursConcurrence']; \n if (data.engagements) { \n   data.engagements.forEach((item, index) => { \n     required.forEach((field)=>{ \n         if(!item[field]) listErrors.push(utils.error(`engagements.${index}.${field}`, 'Ce champ est obligatoire.')); \n     }); \n   }); \n } \n  \n //required PJ  \n if (isEmpty(data['justificatifAdresseActivite'])) {  \n     listErrors.push(utils.error('justificatifAdresseActivite', `Ce champ est obligatoire.`));  \n }  \n   \n return listErrors;"
+      ],
+      "transformers": []
+    },
+    "formulaireAnalyseN1": {
+      "code": "formulaireAnalyseN1",
+      "label": "Analyse Crédit",
+      "schema": {
+        "type": "object",
+        "required": [
+          "nomDossierClient",
+          "typeActivite",
+          "montantSolliciteClient",
+          "montantProposeSIPEM",
+          "pointsAevaluer",
+          "pointsForts",
+          "pointsFaibles",
+          "avisAnalyste"
+        ],
+        "properties": {
+          "codeAgence": {
+            "type": "string"
+          },
+          "codeZone": {
+            "type": "string"
+          },
+          "nomDossierClient": {
+            "type": "string"
+          },
+          "typeActivite": {
+            "type": "string"
+          },
+          "montantSolliciteClient": {
+            "type": "number"
+          },
+          "objetDemande": {
+            "type": "string"
+          },
+          "montantProposeSIPEM": {
+            "type": "number"
+          },
+          "pointsAevaluer": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "valeur économique du projet",
+                "expérience et compétence des dirigeants",
+                "situation financière/rentabilité de l'affaire",
+                "plan de financement rapport charges de remboursement/CAF",
+                "valeur des garanties",
+                "contrepartie SIPEM"
+              ]
+            }
+            
+          },
+          "pointsForts": {
+            "type": "string"
+          },
+          "pointsFaibles": {
+            "type": "string"
+          },
+          "avisAnalyste": {
+            "type": "string"
+          }
+        }
+      },
+      "uischema": {
+        "type": "Categorization",
+        "elements": [
+          {
+            "type": "Category",
+            "label": "Analyse Crédit",
+            "elements": [
+              {
+                "type": "Group",
+                "label": "Analyse Crédit",
+                "options": {
+                  "variant": "collapse"
+                },
+                "elements": [
+                  {
+                    "type": "HorizontalLayout",
+                    "elements": [
+                      {
+                        "type": "Control",
+                        "scope": "#/properties/codeAgence",
+                        "label": "Code Agence",
+                        "options": {
+                          "readOnly": true,
+                          "grid": {
+                            "md": 4,
+                            "sm": 4,
+                            "xs": 4
+                          }
+                        }
+                      },
+                      {
+                        "type": "Control",
+                        "scope": "#/properties/codeZone",
+                        "label": "Code Zone",
+                        "options": {
+                          "readOnly": true,
+                          "grid": {
+                            "md": 4,
+                            "sm": 4,
+                            "xs": 4
+                          }
+                        }
+                      },
+                      {
+                        "type": "Control",
+                        "scope": "#/properties/nomDossierClient",
+                        "label": "Nom Dossier ou Client",
+                        "options": {
+                          "grid": {
+                            "md": 4,
+                            "sm": 4,
+                            "xs": 4
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Control",
+                    "scope": "#/properties/typeActivite",
+                    "label": "Type Activité"
+                  },
+                  {
+                    "type": "HorizontalLayout",
+                    "elements": [
+                      {
+                        "type": "Control",
+                        "scope": "#/properties/montantSolliciteClient",
+                        "label": "Montant Sollicité par Client",
+                        "options": {
+                          "options": {
+                            "max": 9007199254740991,
+                            "min": 0,
+                            "locale": "fr-FR",
+                            "format": "currency",
+                            "prefix": "MGA",
+                            "decimalPlaces": 2,
+                            "decimalSeparator": ".",
+                            "thousandSeparator": " "
+                          },
+                          "grid": {
+                            "md": 4,
+                            "sm": 4,
+                            "xs": 12
+                          }
+                        }
+                      },
+                      {
+                        "type": "Control",
+                        "scope": "#/properties/montantProposeSIPEM",
+                        "label": "Montant Proposé par SIPEM",
+                        "options": {
+                          "options": {
+                            "max": 9007199254740991,
+                            "min": 0,
+                            "locale": "fr-FR",
+                            "format": "currency",
+                            "prefix": "MGA",
+                            "decimalPlaces": 2,
+                            "decimalSeparator": ".",
+                            "thousandSeparator": " "
+                          },
+                          "grid": {
+                            "md": 4,
+                            "sm": 4,
+                            "xs": 12
+                          }
+                        }
+                      },
+                      {
+                        "type": "Control",
+                        "scope": "#/properties/objetDemande",
+                        "label": "Objet Demande",
+                        "options": {
+                          "readOnly": true,
+                          "grid": {
+                            "md": 4,
+                            "sm": 4,
+                            "xs": 4
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Control",
+                    "scope": "#/properties/pointsAevaluer",
+                    "label": "Points à évaluer",
+                    "options": {
+                      "format": "radio"
+                    }
+                  },
+                  {
+                    "type": "HorizontalLayout",
+                    "elements": [
+                      {
+                        "type": "Control",
+                        "scope": "#/properties/pointsForts",
+                        "label": "Points Forts",
+                        "options": {
+                          "grid": {
+                            "md": 4,
+                            "sm": 4,
+                            "xs": 4
+                          }
+                        }
+                      },
+                      {
+                        "type": "Control",
+                        "scope": "#/properties/pointsFaibles",
+                        "label": "Points Faibles",
+                        "options": {
+                          "grid": {
+                            "md": 4,
+                            "sm": 4,
+                            "xs": 4
+                          }
+                        }
+                      },
+                      {
+                        "type": "Control",
+                        "scope": "#/properties/avisAnalyste",
+                        "label": "Avis de l’Analyste",
+                        "options": {
+                          "grid": {
+                            "md": 4,
+                            "sm": 4,
+                            "xs": 4
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
       "scripts": [],
+      "transformers": []
+    },
+    "formulaireAnalyseN2": {
+      "code": "formulaireAnalyseN2",
+      "label": "Analyse Crédit",
+      "schema": {
+        "type": "object",
+        "required": [],
+        "properties": {}
+      },
+      "uischema": {
+        "type": "Categorization",
+        "elements": [
+          {
+            "type": "Category",
+            "elements": [],
+            "label": "Resultat de la visite de caution"
+          }
+        ]
+      },
+      "scripts": [],
+      "transformers": []
+    },
+
+    "formulaireSimulation": {
+      "code": "formulaireSimulation",
+      "label": "donnees de simulation",
+      "schema": {
+        "type": "object",
+        "required": [
+          "age",
+          "simulateurInputs"
+        ],
+        "properties": {
+          "age": {
+            "type": "number"
+          },
+          "simulateurInputs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "dateDebutPret": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "montantPret": {
+                  "type": "number"
+                },
+                "dureePret": {
+                  "type": "number"
+                },
+                "tauxIinteret": {
+                  "type": "number"
+                },
+                "tauxAssurance": {
+                  "type": "number"
+                },
+                "typeDiffere": {
+                  "type": "string",
+                  "enum": [
+                    "Sans Différé",
+                    "Différé Partiel (avec paiement des intérêts)",
+                    "Différé Total (sans paiement des intérêts)"
+                  ]
+                },
+                "dureeDiffere": {
+                  "type": "number"
+                },
+                "mensualite": {
+                  "type": "number"
+                },
+                "fraisGestion": {
+                  "type": "number"
+                },
+                "commission": {
+                  "type": "number"
+                },
+                "tauxApplicable": {
+                  "type": "number"
+                },
+                "montantTaux": {
+                  "type": "number"
+                },
+                "tableau_amortissement": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "dateAmortissement": {
+                        "type": "string"
+                      },
+                      "nEcheance": {
+                        "type": "number"
+                      },
+                      "mensualiteAssurance": {
+                        "type": "number"
+                      },
+                      "mensualitHorsAssurance": {
+                        "type": "number"
+                      },
+                      "interets": {
+                        "type": "number"
+                      },
+                      "TVAinterets": {
+                        "type": "number"
+                      },
+                      "assurance": {
+                        "type": "number"
+                      },
+                      "capitalRembourse": {
+                        "type": "number"
+                      },
+                      "capitalRestantDu": {
+                        "type": "number"
+                      },
+                      "cumulInterets": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                }          
+              }
+            }
+          }
+        }
+      },
+      "uischema": {
+        "type": "Categorization",
+        "elements": [
+          {
+            "type": "Category",
+            "label": "Informations Simulateur",
+            "elements": [
+              {
+                "type": "Control",
+                "scope": "#/properties/age",
+                "label": "AGE",
+                "options": {
+                  "options": {
+                    "max": 1000,
+                    "min": 0,
+                    "locale": "fr-FR",
+                    "format": "currency",
+                    "suffix": "ANS",
+                    "decimalPlaces": 0,
+                    "decimalSeparator": ".",
+                    "thousandSeparator": " "
+                  }
+                }
+              },
+              {
+                "type": "Control",
+                "scope": "#/properties/simulateurInputs",
+                "label": "Informations Simulateur",
+                "options": {
+                  "detail": {
+                    "type": "VerticalLayout",
+                    "elements": [
+                      {
+                        "type": "Group",
+                        "label": "Données concernant le prêt",
+                        "options": {
+                          "variant": "collapse"
+                        },
+                        "elements": [
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/dateDebutPret",
+                                "label": "Date de début",
+                                "options": {
+                                  "grid": {
+                                    "md": 6,
+                                    "sm": 6,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/dureePret",
+                                "label": "Durée",
+                                "options": {
+                                  "options": {
+                                    "max": 1000,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "suffix": "MOIS",
+                                    "decimalPlaces": 0,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 6,
+                                    "sm": 6,
+                                    "xs": 12
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/montantPret",
+                                "label": "Montant du prêt",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 4,
+                                    "sm": 4,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/tauxIinteret",
+                                "label": "Taux d'intérêt",
+                                "options": {
+                                  "options": {
+                                    "max": 100,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "suffix": "%",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 4,
+                                    "sm": 4,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/tauxAssurance",
+                                "label": "Taux d'assurance",
+                                "options": {
+                                  "options": {
+                                    "max": 100,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "suffix": "%",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 4,
+                                    "sm": 4,
+                                    "xs": 12
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Group",
+                        "label": "Différé de remboursement",
+                        "options": {
+                          "variant": "collapse"
+                        },
+                        "elements": [
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/typeDiffere",
+                                "label": "Type de différé",
+                                "options": {
+                                  "grid": {
+                                    "md": 4,
+                                    "sm": 4,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/dureeDiffere",
+                                "label": "Durée du différé",
+                                "options": {
+                                  "options": {
+                                    "max": 1000,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "suffix": "MOIS",
+                                    "decimalPlaces": 0,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 4,
+                                    "sm": 4,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/mensualite",
+                                "label": "Mensualité",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 4,
+                                    "sm": 4,
+                                    "xs": 12
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/fraisGestion",
+                                "label": "Frais de gestion",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 3,
+                                    "sm": 3,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/commission",
+                                "label": "Commission",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 3,
+                                    "sm": 3,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/tauxApplicable",
+                                "label": "Taux applicable",
+                                "options": {
+                                  "options": {
+                                    "max": 100,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "suffix": "%",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 3,
+                                    "sm": 3,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/montantTaux",
+                                "label": "Montant Taux",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 3,
+                                    "sm": 3,
+                                    "xs": 12
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "elementLabelProp": "id"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "scripts": [
+        "const listErrors = [];  \n   \n function isEmpty(value) {  \n   return (  \n     value == null ||  \n     value === '' ||  \n     (Array.isArray(value) && value.length === 0)  \n   );  \n }  \n  \n // required inside tables \n let required = ['dateDebutPret','montantPret','dureePret','tauxIinteret','tauxAssurance','typeDiffere','dureeDiffere','mensualite','fraisGestion', 'commission','tauxApplicable','montantTaux']; \n  \n if (data.simulateurInputs) { \n   data.simulateurInputs.forEach((item, index) => { \n     required.forEach((field)=>{ \n         if(!item[field]) listErrors.push(utils.error(`simulateurInputs.${index}.${field}`, 'Ce champ est obligatoire.')); \n     }); \n   }); \n } \n  \n return listErrors;"
+      ],
       "transformers": []
     },
     "formulaireVide": {
@@ -5681,6 +6445,165 @@
           "realisation": {
             "type": "string",
             "title": "Réalisation"
+          },
+          "nature": {
+            "type": "string",
+            "enum": [
+              "Individuelle",
+              "Société : noms des associés"
+            ]
+          },
+          "patrimoines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nom": {
+                  "type": "string"
+                },
+                "foncierHorsBilan": {
+                  "type": "number"
+                },
+                "residencePrincipale": {
+                  "type": "number"
+                },
+                "residenceSecondaire": {
+                  "type": "number"
+                },
+                "residenceLocative": {
+                  "type": "number"
+                },
+                "epargneStable": {
+                  "type": "number"
+                },
+                "caisse": {
+                  "type": "number"
+                },
+                "pretAvancesClientele": {
+                  "type": "number"
+                },
+                "autres": {
+                  "type": "number"
+                },
+                "totalValeurBrut": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "engagements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "foncierHorsBilanEngagements": {
+                  "type": "number"
+                },
+                "habitat": {
+                  "type": "number"
+                },
+                "creditFDR": {
+                  "type": "number"
+                },
+                "encoursConcurrence": {
+                  "type": "number"
+                },
+                "totalEncoursLies": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "age": {
+            "type": "number"
+          },
+          "simulateurInputs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "dateDebutPret": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "montantPret": {
+                  "type": "number"
+                },
+                "dureePret": {
+                  "type": "number"
+                },
+                "tauxIinteret": {
+                  "type": "number"
+                },
+                "tauxAssurance": {
+                  "type": "number"
+                },
+                "typeDiffere": {
+                  "type": "string",
+                  "enum": [
+                    "Sans Différé",
+                    "Différé Partiel (avec paiement des intérêts)",
+                    "Différé Total (sans paiement des intérêts)"
+                  ]
+                },
+                "dureeDiffere": {
+                  "type": "number"
+                },
+                "mensualite": {
+                  "type": "number"
+                },
+                "fraisGestion": {
+                  "type": "number"
+                },
+                "commission": {
+                  "type": "number"
+                },
+                "tauxApplicable": {
+                  "type": "number"
+                },
+                "montantTaux": {
+                  "type": "number"
+                },
+                "tableau_amortissement": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "dateAmortissement": {
+                        "type": "string"
+                      },
+                      "nEcheance": {
+                        "type": "number"
+                      },
+                      "mensualiteAssurance": {
+                        "type": "number"
+                      },
+                      "mensualitHorsAssurance": {
+                        "type": "number"
+                      },
+                      "interets": {
+                        "type": "number"
+                      },
+                      "TVAinterets": {
+                        "type": "number"
+                      },
+                      "assurance": {
+                        "type": "number"
+                      },
+                      "capitalRembourse": {
+                        "type": "number"
+                      },
+                      "capitalRestantDu": {
+                        "type": "number"
+                      },
+                      "cumulInterets": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                }          
+              }
+            }
           }
         }
       },
@@ -7237,6 +8160,887 @@
               }
             ],
             "label": "Information Prêt"
+          },
+          {
+            "type": "Category",
+            "label": "Informations ANAFI",
+            "elements": [
+              {
+                "type": "Group",
+                "label": "Financement Professionnel",
+                "options": {
+                  "variant": "accordion"
+                },
+                "elements": [
+                  {
+                    "type": "Control",
+                    "scope": "#/properties/nature",
+                    "label": "Nature"
+                  },
+                  {
+                    "type": "Control",
+                    "scope": "#/properties/patrimoines",
+                    "label": "Patrimoine (V.Brut) en millions de MGA",
+                    "options": {
+                      "detail": {
+                        "type": "VerticalLayout",
+                        "elements": [
+                          {
+                            "type": "Control",
+                            "scope": "#/properties/nom",
+                            "label": "Nom"
+                          },
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/foncierHorsBilan",
+                                "label": "Foncier hors bilan",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 3,
+                                    "sm": 3,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/residencePrincipale",
+                                "label": "Résidence principale",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 3,
+                                    "sm": 3,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/residenceSecondaire",
+                                "label": "Résidence secondaire",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 3,
+                                    "sm": 3,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/residenceLocative",
+                                "label": "Résidence locative",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 3,
+                                    "sm": 3,
+                                    "xs": 12
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/epargneStable",
+                                "label": "Epargne stable",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 3,
+                                    "sm": 3,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/caisse",
+                                "label": "Caisse",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 3,
+                                    "sm": 3,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/pretAvancesClientele",
+                                "label": "Prêt et avances clientèle",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 3,
+                                    "sm": 3,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/autres",
+                                "label": "Autres(*)",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 3,
+                                    "sm": 3,
+                                    "xs": 12
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Control",
+                            "scope": "#/properties/totalValeurBrut",
+                            "label": "Total valeur brut",
+                            "options": {
+                              "options": {
+                                "max": 9007199254740991,
+                                "min": 0,
+                                "locale": "fr-FR",
+                                "format": "currency",
+                                "prefix": "MGA",
+                                "decimalPlaces": 2,
+                                "decimalSeparator": ".",
+                                "thousandSeparator": " "
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "elementLabelProp": "nom"
+                    }
+                  },
+                  {
+                    "type": "Control",
+                    "scope": "#/properties/engagements",
+                    "label": "Engagements Liés",
+                    "options": {
+                      "detail": {
+                        "type": "VerticalLayout",
+                        "elements": [
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/foncierHorsBilanEngagements",
+                                "label": "Foncier hors bilan",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 3,
+                                    "sm": 3,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/habitat",
+                                "label": "Habitat",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 3,
+                                    "sm": 3,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/creditFDR",
+                                "label": "Crédit de FDR",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 3,
+                                    "sm": 3,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/encoursConcurrence",
+                                "label": "Encours concurrence",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 3,
+                                    "sm": 3,
+                                    "xs": 12
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Control",
+                            "scope": "#/properties/totalEncoursLies",
+                            "label": "Total encours liés",
+                            "options": {
+                              "options": {
+                                "max": 9007199254740991,
+                                "min": 0,
+                                "locale": "fr-FR",
+                                "format": "currency",
+                                "prefix": "MGA",
+                                "decimalPlaces": 2,
+                                "decimalSeparator": ".",
+                                "thousandSeparator": " "
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "elementLabelProp": "id"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Category",
+            "label": "Informations Simulateur",
+            "elements": [
+              {
+                "type": "Control",
+                "scope": "#/properties/age",
+                "label": "AGE",
+                "options": {
+                  "options": {
+                    "max": 1000,
+                    "min": 0,
+                    "locale": "fr-FR",
+                    "format": "currency",
+                    "suffix": "ANS",
+                    "decimalPlaces": 0,
+                    "decimalSeparator": ".",
+                    "thousandSeparator": " "
+                  }
+                }
+              },
+              {
+                "type": "Control",
+                "scope": "#/properties/simulateurInputs",
+                "label": "Informations Simulateur",
+                "options": {
+                  "detail": {
+                    "type": "VerticalLayout",
+                    "elements": [
+                      {
+                        "type": "Group",
+                        "label": "Données concernant le prêt",
+                        "options": {
+                          "variant": "collapse"
+                        },
+                        "elements": [
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/dateDebutPret",
+                                "label": "Date de début",
+                                "options": {
+                                  "grid": {
+                                    "md": 6,
+                                    "sm": 6,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/dureePret",
+                                "label": "Durée",
+                                "options": {
+                                  "options": {
+                                    "max": 1000,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "suffix": "MOIS",
+                                    "decimalPlaces": 0,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 6,
+                                    "sm": 6,
+                                    "xs": 12
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/montantPret",
+                                "label": "Montant du prêt",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 4,
+                                    "sm": 4,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/tauxIinteret",
+                                "label": "Taux d'intérêt",
+                                "options": {
+                                  "options": {
+                                    "max": 100,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "suffix": "%",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 4,
+                                    "sm": 4,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/tauxAssurance",
+                                "label": "Taux d'assurance",
+                                "options": {
+                                  "options": {
+                                    "max": 100,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "suffix": "%",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 4,
+                                    "sm": 4,
+                                    "xs": 12
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Group",
+                        "label": "Différé de remboursement",
+                        "options": {
+                          "variant": "collapse"
+                        },
+                        "elements": [
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/typeDiffere",
+                                "label": "Type de différé",
+                                "options": {
+                                  "grid": {
+                                    "md": 4,
+                                    "sm": 4,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/dureeDiffere",
+                                "label": "Durée du différé",
+                                "options": {
+                                  "options": {
+                                    "max": 1000,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "suffix": "MOIS",
+                                    "decimalPlaces": 0,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 4,
+                                    "sm": 4,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/mensualite",
+                                "label": "Mensualité",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 4,
+                                    "sm": 4,
+                                    "xs": 12
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/fraisGestion",
+                                "label": "Frais de gestion",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 3,
+                                    "sm": 3,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/commission",
+                                "label": "Commission",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 3,
+                                    "sm": 3,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/tauxApplicable",
+                                "label": "Taux applicable",
+                                "options": {
+                                  "options": {
+                                    "max": 100,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "suffix": "%",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 3,
+                                    "sm": 3,
+                                    "xs": 12
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Control",
+                                "scope": "#/properties/montantTaux",
+                                "label": "Montant Taux",
+                                "options": {
+                                  "options": {
+                                    "max": 9007199254740991,
+                                    "min": 0,
+                                    "locale": "fr-FR",
+                                    "format": "currency",
+                                    "prefix": "MGA",
+                                    "decimalPlaces": 2,
+                                    "decimalSeparator": ".",
+                                    "thousandSeparator": " "
+                                  },
+                                  "grid": {
+                                    "md": 3,
+                                    "sm": 3,
+                                    "xs": 12
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Control",
+                        "scope": "#/properties/tableau_amortissement",
+                        "label": "Tableau d'amortissement",
+                        "options": {
+                          "detail": {
+                            "type": "VerticalLayout",
+                            "elements": [
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/mensualiteAssurance",
+                                    "label": "Mensualité avec assurance",
+                                    "options": {
+                                      "options": {
+                                        "max": 9007199254740991,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "format": "currency",
+                                        "prefix": "MGA",
+                                        "decimalPlaces": 2,
+                                        "decimalSeparator": ".",
+                                        "thousandSeparator": " "
+                                      },
+                                      "grid": {
+                                        "md": 3,
+                                        "sm": 3,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/mensualitHorsAssurance",
+                                    "label": "Mensualité hors assurance",
+                                    "options": {
+                                      "options": {
+                                        "max": 9007199254740991,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "format": "currency",
+                                        "prefix": "MGA",
+                                        "decimalPlaces": 2,
+                                        "decimalSeparator": ".",
+                                        "thousandSeparator": " "
+                                      },
+                                      "grid": {
+                                        "md": 3,
+                                        "sm": 3,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/interets",
+                                    "label": "Intérêts",
+                                    "options": {
+                                      "options": {
+                                        "max": 9007199254740991,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "format": "currency",
+                                        "prefix": "MGA",
+                                        "decimalPlaces": 2,
+                                        "decimalSeparator": ".",
+                                        "thousandSeparator": " "
+                                      },
+                                      "grid": {
+                                        "md": 3,
+                                        "sm": 3,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/TVAinterets",
+                                    "label": "TVA Intérêts",
+                                    "options": {
+                                      "options": {
+                                        "max": 9007199254740991,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "format": "currency",
+                                        "prefix": "MGA",
+                                        "decimalPlaces": 2,
+                                        "decimalSeparator": ".",
+                                        "thousandSeparator": " "
+                                      },
+                                      "grid": {
+                                        "md": 3,
+                                        "sm": 3,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/assurance",
+                                    "label": "Assurance",
+                                    "options": {
+                                      "options": {
+                                        "max": 9007199254740991,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "format": "currency",
+                                        "prefix": "MGA",
+                                        "decimalPlaces": 2,
+                                        "decimalSeparator": ".",
+                                        "thousandSeparator": " "
+                                      },
+                                      "grid": {
+                                        "md": 3,
+                                        "sm": 3,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/capitalRembourse",
+                                    "label": "Capital remboursé",
+                                    "options": {
+                                      "options": {
+                                        "max": 9007199254740991,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "format": "currency",
+                                        "prefix": "MGA",
+                                        "decimalPlaces": 2,
+                                        "decimalSeparator": ".",
+                                        "thousandSeparator": " "
+                                      },
+                                      "grid": {
+                                        "md": 3,
+                                        "sm": 3,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/capitalRestantDu",
+                                    "label": "Capital restant dû",
+                                    "options": {
+                                      "options": {
+                                        "max": 9007199254740991,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "format": "currency",
+                                        "prefix": "MGA",
+                                        "decimalPlaces": 2,
+                                        "decimalSeparator": ".",
+                                        "thousandSeparator": " "
+                                      },
+                                      "grid": {
+                                        "md": 3,
+                                        "sm": 3,
+                                        "xs": 12
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Control",
+                                    "scope": "#/properties/cumulInterets",
+                                    "label": "Cumul des intérêts",
+                                    "options": {
+                                      "options": {
+                                        "max": 9007199254740991,
+                                        "min": 0,
+                                        "locale": "fr-FR",
+                                        "format": "currency",
+                                        "prefix": "MGA",
+                                        "decimalPlaces": 2,
+                                        "decimalSeparator": ".",
+                                        "thousandSeparator": " "
+                                      },
+                                      "grid": {
+                                        "md": 3,
+                                        "sm": 3,
+                                        "xs": 12
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          "elementLabelProp": "dateAmortissement"
+                        }
+                      }
+                    ]
+                  },
+                  "elementLabelProp": "id"
+                }
+              }
+            ]
           }
         ]
       },
@@ -7249,7 +9053,7 @@
       "code": "formulaireODC",
       "readOnly": true,
       "data": {
-	"prospect": "{{prospect}}",
+	      "prospect": "{{prospect}}",
         "client" : "{{client}}",
         "segment" : "{{client.segment}}",
 
@@ -7266,7 +9070,14 @@
         "cinNumerisee": "{{cinNumerisee}}",
         "certificatResidenceDemandeur": "{{certificatResidenceDemandeur}}",
         "devisProforma": "{{devisProforma}}",
-        "photocopieCarnetFokontany": "{{photocopieCarnetFokontany}}"
+        "photocopieCarnetFokontany": "{{photocopieCarnetFokontany}}",
+
+        "simulateurInputs": "{{simulateurInputs}}",
+        "age": "{{age}}",
+        
+        "nature": "{{nature}}",
+        "patrimoines": "{{patrimoines}}",
+        "engagements": "{{engagements}}"
       }
     }
   ],
@@ -7321,9 +9132,8 @@
                 "in": [
                   "creation",
                   "visiteCaution",
-                  "analyseCredit",
-                  "conformiteN1",
-                  "conformiteN2",
+                  "analyseCreditN1",
+                  "analyseCreditN2",
                   "comiteArbitrage",
                   "validationProposition",
                   "integrationT24"
