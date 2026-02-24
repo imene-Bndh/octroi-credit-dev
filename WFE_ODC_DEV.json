@@ -5226,6 +5226,24 @@
                                 }
                               }
                             ]
+                          },
+                          {
+                            "type": "Control",
+                            "scope": "#/properties/totalValeurBrut",
+                            "label": "Total valeur brut",
+                            "options": {
+                              "options": {
+                                "max": 9007199254740991,
+                                "min": 0,
+                                "locale": "fr-FR",
+                                "format": "currency",
+                                "prefix": "MGA",
+                                "decimalPlaces": 2,
+                                "decimalSeparator": ".",
+                                "thousandSeparator": " "
+                              },
+                              "readOnly": true
+                            }
                           }
                         ]
                       },
@@ -5345,9 +5363,26 @@
         ]
       },
       "scripts": [
-        "// required table beneficiaire  \n const listErrors = [];  \n   \n function isEmpty(value) {  \n   return (  \n     value == null ||  \n     value === '' ||  \n     (Array.isArray(value) && value.length === 0)  \n   );  \n }  \n  \n if (data['nature'] == 'Individuelle' ) {  \n     if ((data['patrimoines']).length > 1) {  \n         listErrors.push(utils.error('patrimoines', `Ce tableau ne peut contenir qu'une seule entrée.`));  \n     }  \n     if ((data['engagements']).length > 1) {  \n         listErrors.push(utils.error('engagements', `Ce tableau ne peut contenir qu'une seule entrée.`));  \n     }  \n }  \n  \n  \n //required inside tables \n let required = ['nom','foncierHorsBilan','residencePrincipale','residenceSecondaire','residenceLocative','epargneStable','caisse','pretAvancesClientele']; \n if (data.patrimoines) { \n   data.patrimoines.forEach((item, index) => { \n     required.forEach((field)=>{ \n         if(!item[field]) listErrors.push(utils.error(`patrimoines.${index}.${field}`, 'Ce champ est obligatoire.')); \n     }); \n   }); \n } \n required = ['foncierHorsBilanEngagements','habitat','creditFDR','encoursConcurrence']; \n if (data.engagements) { \n   data.engagements.forEach((item, index) => { \n     required.forEach((field)=>{ \n         if(!item[field]) listErrors.push(utils.error(`engagements.${index}.${field}`, 'Ce champ est obligatoire.')); \n     }); \n   }); \n } \n  \n //required PJ  \n if (isEmpty(data['justificatifAdresseActivite'])) {  \n     listErrors.push(utils.error('justificatifAdresseActivite', `Ce champ est obligatoire.`));  \n }  \n   \n return listErrors;"
+        "// required \n const listErrors = [];  \n   \n function isEmpty(value) {  \n   return (value == null || value === '' || (Array.isArray(value) && value.length === 0));  \n }  \n  \n if (data['nature'] == 'Individuelle' ) {  \n     if ((data['patrimoines']).length > 1) {  \n         listErrors.push(utils.error('patrimoines', `Ce tableau ne peut contenir qu'une seule entrée.`));  \n     }  \n     if ((data['engagements']).length > 1) {  \n         listErrors.push(utils.error('engagements', `Ce tableau ne peut contenir qu'une seule entrée.`));  \n     }  \n }  \n  \n  \n //required inside tables \n let required = ['nom','foncierHorsBilan','residencePrincipale','residenceSecondaire','residenceLocative','epargneStable','caisse','pretAvancesClientele']; \n if (data.patrimoines) { \n   data.patrimoines.forEach((item, index) => { \n     required.forEach((field)=>{ \n         if(isEmpty(item[field])) listErrors.push(utils.error(`patrimoines.${index}.${field}`, 'Ce champ est obligatoire.')); \n     }); \n   }); \n } \n required = ['foncierHorsBilanEngagements','habitat','creditFDR','encoursConcurrence']; \n if (data.engagements) { \n   data.engagements.forEach((item, index) => { \n     required.forEach((field)=>{ \n         if(isEmpty(item[field])) listErrors.push(utils.error(`engagements.${index}.${field}`, 'Ce champ est obligatoire.')); \n     }); \n   }); \n } \n  \n //required PJ  \n if (isEmpty(data['justificatifAdresseActivite'])) {  \n     listErrors.push(utils.error('justificatifAdresseActivite', `Ce champ est obligatoire.`));  \n }  \n   \n return listErrors;"
       ],
-      "transformers": []
+      "transformers": [
+        {
+          "root": "patrimoines",
+          "mode": "perItem",
+          "deps": ["foncierHorsBilan","residencePrincipale","residenceSecondaire","residenceLocative","epargneStable","caisse","pretAvancesClientele","autres"],
+          "template": {
+            "totalValeurBrut": "{{ 0 | add(foncierHorsBilan) | add(residencePrincipale) | add(residenceSecondaire) | add(residenceLocative) | add(epargneStable) | add(caisse) | add(pretAvancesClientele) | add(autres)}}"
+          }
+        },
+        {
+          "root": "engagements",
+          "mode": "perItem",
+          "deps": ["foncierHorsBilanEngagements","habitat","creditFDR","encoursConcurrence"],
+          "template": {
+            "totalValeurBrut": "{{ 0 | add(foncierHorsBilanEngagements) | add(habitat) | add(creditFDR) | add(encoursConcurrence)}}"
+          }
+        }
+      ]
     },
     "formulaireAnalyseN1": {
       "code": "formulaireAnalyseN1",
@@ -6044,7 +6079,7 @@
         ]
       },
       "scripts": [
-        "const listErrors = [];  \n   \n function isEmpty(value) {  \n   return (  \n     value == null ||  \n     value === '' ||  \n     (Array.isArray(value) && value.length === 0)  \n   );  \n }  \n  \n // required inside tables \n let required = ['dateDebutPret','montantPret','dureePret','tauxIinteret','tauxAssurance','typeDiffere','dureeDiffere','mensualite','fraisGestion', 'commission','tauxApplicable','montantTaux']; \n  \n if (data.simulateurInputs) { \n   data.simulateurInputs.forEach((item, index) => { \n     required.forEach((field)=>{ \n         if(!item[field]) listErrors.push(utils.error(`simulateurInputs.${index}.${field}`, 'Ce champ est obligatoire.')); \n     }); \n   }); \n } \n  \n return listErrors;"
+        "const listErrors = [];  \n   \n function isEmpty(value) {  \n   return (  \n     value == null ||  \n     value === '' ||  \n     (Array.isArray(value) && value.length === 0)  \n   );  \n }  \n  \n // required inside tables \n let required = ['dateDebutPret','montantPret','dureePret','tauxIinteret','tauxAssurance','typeDiffere','dureeDiffere','mensualite','fraisGestion', 'commission','tauxApplicable','montantTaux']; \n  \n if (data.simulateurInputs) { \n   data.simulateurInputs.forEach((item, index) => { \n     required.forEach((field)=>{ \n         if(isEmpty(item[field])) listErrors.push(utils.error(`simulateurInputs.${index}.${field}`, 'Ce champ est obligatoire.')); \n     }); \n   }); \n } \n  \n return listErrors;"
       ],
       "transformers": []
     },
